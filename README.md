@@ -128,7 +128,17 @@ GOOGLE_API_KEY=your_google_api_key
 GROQ_API_KEY=your_groq_api_key
 ```
 
-Run the application
+Run the MCP Server (Web Search Tool)
+
+Open a new terminal, activate the environment, and run:
+
+```bash
+python -m mcp_server.server
+```
+
+Run the application (Frontend)
+
+Open another terminal, activate the environment, and run:
 
 ```bash
 streamlit run app/ui/app.py

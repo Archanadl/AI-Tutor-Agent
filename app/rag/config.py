@@ -6,4 +6,5 @@ class Settings:
     chroma_persist_dir: str = "chroma_db"
 
     retrieval_k: int = 4
+    min_relevance_score: float = 0.3
 settings = Settings()

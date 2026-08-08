@@ -1,4 +1,5 @@
-class Settings:
+from pydantic_settings import BaseSettings, SettingsConfigDict
+class Settings(BaseSettings):
     chunk_size: int = 500
     chunk_overlap: int = 50
     embedding_model: str = "sentence-transformers/all-MiniLM-L6-v2"
@@ -7,4 +8,12 @@ class Settings:
 
     retrieval_k: int = 4
     min_relevance_score: float = 0.3
+    google_api_key: str = ""
+    gemini_model: str = "gemini-3.6-flash"
+    llm_temperature: float = 0.0
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        extra="ignore"
+    )
 settings = Settings()

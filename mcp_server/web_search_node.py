@@ -23,15 +23,27 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-from typing import TYPE_CHECKING
+from typing import TypedDict
 
 from langchain_core.documents import Document
 
-if TYPE_CHECKING:
-    # Avoid circular / heavy imports at module level; the type is only
-    # used for annotation.  At runtime RAGState is just a TypedDict so
-    # any conforming dict works.
-    from app.rag.retriever import RAGState
+
+# ---------------------------------------------------------------------------
+# Local copy of the team's RAGState (defined in app.rag.retriever on the
+# integration-m2-m3 branch).  Kept here so this module is self-contained
+# and importable on any branch without depending on app.rag.
+# ---------------------------------------------------------------------------
+class RAGState(TypedDict):
+    """LangGraph state schema for the CRAG pipeline."""
+
+    question: str
+    document_id: str
+    documents: list[Document]
+    generation: str
+    source_type: str
+    confidence_score: float
+    web_search_used: bool
+    retry_count: int
 
 logger = logging.getLogger("mcp_server.web_search_node")
 

@@ -61,7 +61,7 @@ def test_prompts():
     question = "What is a Binary Search Tree?"
 
     context = """
-    A Binary Search Tree (BST) is a binary tree in which
+    The Binary Search Tree (BST) is a binary tree in which
     the left subtree contains values smaller than the root
     and the right subtree contains values greater than the root.
     """

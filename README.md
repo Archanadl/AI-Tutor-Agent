@@ -187,4 +187,4 @@ streamlit run app/ui/app.py
 
 ## License
 
-This project is developed for educational and research purposes as part of the Dell Technologies AI Internship.
+This project is developed for educational and research purposes as part of the Dell Technologies GSOP'26.

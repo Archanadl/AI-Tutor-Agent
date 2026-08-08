@@ -1,7 +1,7 @@
 from app.rag.retriever import run_rag_query
 
 
-question = "What is quantum computing?"
+question = "Who is the current Prime Minister of Japan?"
 
 document_id = "test-document-001"
 

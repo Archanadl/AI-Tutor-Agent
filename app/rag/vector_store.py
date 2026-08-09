@@ -8,6 +8,7 @@ RAG pipeline, it's purely storage.
 """
 
 from functools import lru_cache
+
 from langchain_core.documents import Document
 from langchain_chroma import Chroma
 
@@ -18,10 +19,10 @@ from app.rag.embeddings import get_embedding_model
 @lru_cache(maxsize=1)
 def get_vectorstore() -> Chroma:
     """
-    Single shared Chroma collection for all documents. Documents are
-    isolated from each other via the 'document_id' metadata field rather
-    than separate collections — this keeps retrieval fast and avoids
-    collection-management overhead as the number of uploaded PDFs grows.
+    Return the shared ChromaDB vector store.
+
+    All uploaded documents are stored in the same collection.
+    Documents are separated using the 'document_id' metadata field.
     """
     return Chroma(
         collection_name=settings.chroma_collection_name,
@@ -31,40 +32,78 @@ def get_vectorstore() -> Chroma:
 
 
 def add_chunks(chunks: list[Document]) -> None:
-    """Embeds and stores a list of already-chunked, already-tagged Documents."""
+    """
+    Add already-chunked Documents to ChromaDB.
+
+    The Documents should already contain metadata such as:
+    document_id, source, and chunk_index.
+    """
     if not chunks:
         return
+
     get_vectorstore().add_documents(chunks)
 
 
 def delete_document(document_id: str) -> None:
-    """Removes all chunks belonging to a document (e.g. if the user deletes an upload)."""
+    """
+    Delete all chunks belonging to a specific document.
+    """
+    if not document_id:
+        raise ValueError("document_id cannot be empty.")
+
     vectorstore = get_vectorstore()
-    vectorstore._collection.delete(where={"document_id": document_id})
+
+    vectorstore._collection.delete(
+        where={"document_id": document_id}
+    )
 
 
 def similarity_search(
     query: str,
-    document_id: str = None,
-    k: int = None,
+    document_id: str | None = None,
+    k: int | None = None,
 ) -> list[tuple[Document, float]]:
     """
-    Low-level similarity search, optionally scoped to a single document.
-    Returns (Document, relevance_score) tuples, score normalized 0-1
-    (higher = more relevant).
+    Search ChromaDB for documents relevant to the query.
+
+    If document_id is provided, retrieval is restricted to that document.
+
+    Returns:
+        List of (Document, relevance_score) tuples.
+        Scores are normalized between 0 and 1,
+        where higher means more relevant.
     """
+    if not query.strip():
+        raise ValueError("Query cannot be empty.")
+
     vectorstore = get_vectorstore()
-    filter_dict = {"document_id": document_id} if document_id else None
+
+    filter_dict = (
+        {"document_id": document_id}
+        if document_id
+        else None
+    )
 
     return vectorstore.similarity_search_with_relevance_scores(
         query,
-        k=k or settings.retrieval_k,
+        k=k if k is not None else settings.retrieval_k,
         filter=filter_dict,
     )
 
 
-def get_all_chunks_for_document(document_id: str) -> list[str]:
-    """Fetches every stored chunk's raw text for a document — used by summarization."""
+def get_all_chunks_for_document(
+    document_id: str,
+) -> list[str]:
+    """
+    Fetch all stored chunk texts belonging to a document.
+    """
+    if not document_id:
+        raise ValueError("document_id cannot be empty.")
+
     vectorstore = get_vectorstore()
-    result = vectorstore.get(where={"document_id": document_id})
+
+    result = vectorstore.get(
+        where={"document_id": document_id}
+    )
+
     return result.get("documents", [])

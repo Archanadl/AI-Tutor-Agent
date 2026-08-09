@@ -13,8 +13,8 @@ print("Pages:", len(pages))
 # 2. Create chunks
 chunks = chunk_pages(
     pages,
-    document_id="test-document-001",
-    source_name="research_report.pdf"
+    document_id="research_report.pdf",
+    source_name="research_report.pdf",
 )
 
 print("Chunks:", len(chunks))
@@ -29,15 +29,18 @@ print("Chunks stored successfully!")
 # 4. Test similarity search
 results = similarity_search(
     "What is quantum computing?",
-    document_id="test-document-001",
-    k=3
+    document_id="research_report.pdf",
+    k=3,
 )
 
 print("\n--- Search Results ---")
+
+print("Retrieved:", len(results))
 
 for i, (document, score) in enumerate(results, start=1):
     print(f"\nResult {i}")
     print("Score:", score)
     print("Page:", document.metadata.get("page"))
     print("Source:", document.metadata.get("source"))
+    print("Document ID:", document.metadata.get("document_id"))
     print("Text:", document.page_content[:300])

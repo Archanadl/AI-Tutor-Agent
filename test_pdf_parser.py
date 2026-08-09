@@ -11,5 +11,6 @@ for page in pages[:2]:
     print("\n--- Page ---")
     print("Page number:", page.metadata.get("page"))
     print("Source:", page.metadata.get("source"))
+    print("Document ID:", page.metadata.get("document_id"))
     print("Text:")
     print(page.page_content[:500])

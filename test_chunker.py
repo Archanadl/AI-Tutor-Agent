@@ -8,12 +8,13 @@ pages = parse_pdf(pdf_path)
 
 chunks = chunk_pages(
     pages=pages,
-    document_id="test-document-001",
+    document_id="research_report.pdf",
     source_name="research_report.pdf",
 )
 
 print("Original pages:", len(pages))
 print("Total chunks:", len(chunks))
+
 
 for i, chunk in enumerate(chunks[:5]):
     print("\n--- Chunk", i + 1, "---")

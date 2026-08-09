@@ -224,13 +224,48 @@ def retrieve_node(state: RAGState) -> RAGState:
 
 def grade_documents_node(state: RAGState) -> RAGState:
     """
-    Documents have already been filtered by similarity score
-    during retrieval, so no additional LLM grading is needed.
+    Use the LLM relevance grader to keep only documents
+    that contain enough information to answer the question.
     """
+
+    llm = get_llm()
+
+    relevant_documents = []
+
+    print("\n==============================")
+    print("DOCUMENT GRADING")
+    print("==============================")
+
+    for i, document in enumerate(state["documents"], start=1):
+
+        context = document.page_content
+
+        prompt = GRADER_PROMPT.format(
+            question=state["question"],
+            context=context,
+        )
+
+        try:
+            response = llm.invoke(prompt)
+            response_text = response_to_text(response)
+
+            result = parse_json_response(response_text)
+
+            relevant = result.get("relevant", False)
+
+            print(f"Document {i}: {relevant}")
+
+            if relevant:
+                relevant_documents.append(document)
+
+        except Exception as e:
+            print(f"Document {i}: GRADER ERROR - {e}")
+
+    print(f"Kept {len(relevant_documents)} / {len(state['documents'])} documents")
 
     return {
         **state,
-        "documents": state["documents"],
+        "documents": relevant_documents,
     }
 
 # ============================================================

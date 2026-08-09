@@ -18,26 +18,25 @@ def retrieve(
 ) -> list[Document]:
     """
     Retrieve the most relevant document chunks for a question.
-
-    Args:
-        question: User's question.
-        document_id: ID of the PDF/document.
-        k: Number of chunks to retrieve.
-
-    Returns:
-        List of relevant Document objects.
     """
+
+    if not question.strip():
+        raise ValueError("Question cannot be empty.")
+
+    if not document_id:
+        raise ValueError("document_id cannot be empty.")
 
     results = similarity_search(
         query=question,
         document_id=document_id,
-        k=k or settings.retrieval_k,
+        k=k if k is not None else settings.retrieval_k,
     )
 
     documents = []
 
     for document, score in results:
         if score >= settings.min_relevance_score:
+            document.metadata["relevance_score"] = score
             documents.append(document)
 
     return documents

@@ -2,6 +2,7 @@
 
 import os
 from typing import TypedDict, List
+from langchain_groq import ChatGroq
 from langchain_core.documents import Document
 
 # 1. State Definition
@@ -36,19 +37,23 @@ def retrieve_node(state: TutorState):
     
     return {"context": documents}
 
-
 def generate_node(state: TutorState):
     print("--- GENERATING ANSWER ---")
     question = state.get("student_question", "")
     context = state.get("context", [])
     
-    # Temporarily bypassing ChatOpenAI to allow the graph to compile and test
+    # 1. Initialize Groq (Using Llama 3 8B which is lightning fast)
+    llm = ChatGroq(model="llama-3.1-8b-instant", temperature=0.2)    
+    # 2. Get and format your actual Prompt
     generator_prompt = PromptManager.get_generator_prompt()
-    formatted_prompt = generator_prompt.format(context=context, question=question)    
-    # Mocking the response for integration testing
-    mock_response = f"This is a mock answer to: '{question}'. The prompt and RAG context formatted successfully!"
+    formatted_prompt = generator_prompt.format(context=context, question=question)
     
-    return {"student_answer": mock_response}
+    # 3. Generate the real response from Groq
+    response = llm.invoke(formatted_prompt)
+    
+    return {"student_answer": response.content}
+
+
 
 
 # ==========================================
@@ -70,3 +75,4 @@ workflow.add_edge("generate", END)
 
 # Compile it 
 tutor_graph = workflow.compile()
+

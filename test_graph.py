@@ -1,3 +1,7 @@
+from dotenv import load_dotenv
+load_dotenv()
+
+# ... rest of your imports (from app.graph import tutor_graph, etc.)
 from app.graph import tutor_graph
 def run_graph_test():
     print("--- STARTING LANGGRAPH TEST ---")

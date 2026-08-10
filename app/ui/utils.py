@@ -11,17 +11,38 @@ import streamlit as st
 # ============================================================
 
 DEFAULTS = {
+    # Conversations
     "chats": {},
     "current_chat": None,
+
+    # Documents
     "uploaded_files": [],
+
+    # Navigation
     "page": "Home",
+
+    # Quiz
     "quiz_started": False,
     "quiz_score": None,
     "quiz_items": [],
+
+    # Chat display options
     "show_sources": True,
     "show_confidence": True,
     "show_trace": True,
+
+    # Learning
     "studied_topics": [],
+
+    # UI preferences
+    "theme": "Midnight",
+    "font_size": "Medium",
+    "chat_density": "Comfortable",
+    "animations_enabled": True,
+
+    # Chat avatars
+    "user_avatar": "🧑‍🎓",
+    "assistant_avatar": "🎓",
 }
 
 

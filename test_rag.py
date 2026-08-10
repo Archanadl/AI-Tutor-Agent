@@ -16,7 +16,7 @@ TEST_CASES = [
     },
 ]
 
-DOCUMENT_ID = "test-document-001"
+DOCUMENT_ID = "research_report.pdf"
 
 
 passed = 0

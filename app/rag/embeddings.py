@@ -22,21 +22,16 @@ def get_embedding_model() -> HuggingFaceEmbeddings:
     Subsequent calls reuse the same model.
     """
     return HuggingFaceEmbeddings(
-        model_name=settings.embedding_model
+        model_name=settings.embedding_model,
+        encode_kwargs={"normalize_embeddings": True},
     )
 
 
 def embed_query(text: str) -> list[float]:
     """Generate an embedding vector for a single query."""
-    if not text.strip():
-        raise ValueError("Query text cannot be empty.")
-
     return get_embedding_model().embed_query(text)
 
 
 def embed_documents(texts: list[str]) -> list[list[float]]:
     """Generate embedding vectors for multiple document chunks."""
-    if not texts:
-        return []
-
     return get_embedding_model().embed_documents(texts)

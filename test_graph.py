@@ -1,11 +1,11 @@
-from app.graph.graph import tutor_graph
-
+from app.graph import tutor_graph
 def run_graph_test():
     print("--- STARTING LANGGRAPH TEST ---")
     
     # 1. Define the initial state (what the user asks)
     initial_state = {
         "student_question": "What is a Binary Search Tree?",
+        "document_id": "test_doc_1",
         "student_answer": "It is a tree where everything is sorted.",
         # We leave the other fields empty for the nodes to fill in
     }
@@ -19,4 +19,4 @@ def run_graph_test():
             print(f"State Update: {state_update}\n")
 
 if __name__ == "__main__":
-    run_graph_test()
+    run_graph_test() 

@@ -1,26 +1,74 @@
 from dotenv import load_dotenv
 load_dotenv()
 
-# ... rest of your imports (from app.graph import tutor_graph, etc.)
 from app.graph import tutor_graph
+# ... rest of your script
+import os
+from dotenv import load_dotenv
+
+# 1. Find the exact folder where this script lives
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Point directly to the .env file in that same folder
+ENV_PATH = os.path.join(BASE_DIR, ".env")
+
+# 3. Force load that specific file
+load_dotenv(ENV_PATH)
+
+# Now do your imports:
+from app.graph import tutor_graph
+
+
+
 def run_graph_test():
-    print("--- STARTING LANGGRAPH TEST ---")
-    
-    # 1. Define the initial state (what the user asks)
+    print("\n" + "=" * 60)
+    print("       AI TUTOR - LANGGRAPH TEST")
+    print("=" * 60)
+
+    # --------------------------------------------------
+    # Initial state
+    # --------------------------------------------------
+
     initial_state = {
-        "student_question": "What is a Binary Search Tree?",
-        "document_id": "test_doc_1",
-        "student_answer": "It is a tree where everything is sorted.",
-        # We leave the other fields empty for the nodes to fill in
+        "student_question": "What is quantum computing?",
+        "document_id": "research_report.pdf"
     }
-    
-    print("\nStarting Graph Execution...\n")
-    
-    # 2. Run the graph and print the output at each step
-    for event in tutor_graph.stream(initial_state):
-        for node_name, state_update in event.items():
-            print(f"--- Just finished node: '{node_name}' ---")
-            print(f"State Update: {state_update}\n")
+
+    print("\nQuestion:")
+    print(initial_state["student_question"])
+
+    print("\nDocument ID:")
+    print(initial_state["document_id"])
+
+    print("\n" + "-" * 60)
+    print("STARTING GRAPH")
+    print("-" * 60)
+
+    # --------------------------------------------------
+    # Run the LangGraph
+    # --------------------------------------------------
+
+    final_state = tutor_graph.invoke(initial_state)
+
+    # --------------------------------------------------
+    # Display final result
+    # --------------------------------------------------
+
+    print("\n" + "=" * 60)
+    print("              FINAL RESULT")
+    print("=" * 60)
+
+    print("\nRelevant:")
+    print(final_state.get("relevant"))
+
+    print("\nFinal Answer:")
+    print("-" * 60)
+    print(final_state.get("student_answer"))
+
+    print("\n" + "=" * 60)
+    print("             TEST COMPLETED")
+    print("=" * 60)
+
 
 if __name__ == "__main__":
-    run_graph_test() 
+    run_graph_test()

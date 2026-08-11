@@ -4,12 +4,11 @@ app/rag/retriever.py
 Retrieves the most relevant chunks from ChromaDB
 for a user's question.
 """
-
 from langchain_core.documents import Document
 
+# These imports assume your teammates have created these files!
 from app.rag.vector_store import similarity_search
 from app.rag.config import settings
-
 
 def retrieve(
     question: str,
@@ -19,7 +18,6 @@ def retrieve(
     """
     Retrieve the most relevant document chunks for a question.
     """
-
     if not question.strip():
         raise ValueError("Question cannot be empty.")
 

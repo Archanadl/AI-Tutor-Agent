@@ -49,17 +49,17 @@ class TutorState(TypedDict, total=False):
 # ============================================================
 
 # Dynamic LLM Initialization based on active configuration
-if settings.google_api_key:
-    llm = ChatGoogleGenerativeAI(
-        model=settings.gemini_model,
-        temperature=settings.llm_temperature,
-        google_api_key=settings.google_api_key
-    )
-elif settings.groq_api_key:
+if settings.groq_api_key:
     llm = ChatGroq(
         model=settings.groq_model,
         temperature=settings.llm_temperature,
         api_key=settings.groq_api_key
+    )
+elif settings.google_api_key:
+    llm = ChatGoogleGenerativeAI(
+        model=settings.gemini_model,
+        temperature=settings.llm_temperature,
+        google_api_key=settings.google_api_key
     )
 else:
     raise ValueError(

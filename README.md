@@ -1,5 +1,4 @@
 # AI-Tutor-Agent
-# AI Tutor Agent
 
 ## Overview
 

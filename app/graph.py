@@ -28,6 +28,7 @@ from langgraph.graph import StateGraph, END
 
 from app.rag.retriever import retrieve
 from app.prompts.prompt_manager import PromptManager
+from mcp_server.web_search_node import web_search_node
 
 
 # ============================================================
@@ -255,22 +256,12 @@ def generate_node(state: TutorState):
 
 
 # ============================================================
-# NODE 4: FALLBACK
+# NODE 4: WEB SEARCH (MCP)
 # ============================================================
-
-def fallback_node(state: TutorState):
-
-    print("\n--- FALLBACK ---")
-
-    fallback_message = (
-        "I couldn't find enough information in the "
-        "uploaded study material to accurately answer "
-        "your question."
-    )
-
-    return {
-        "student_answer": fallback_message
-    }
+# The actual implementation lives in mcp_server/web_search_node.py.
+# It connects to the local FastMCP server (port 8000), performs a
+# DuckDuckGo search, and appends the results to state["context"]
+# so the generate node can use them to answer the student.
 
 
 # ============================================================
@@ -284,7 +275,7 @@ def route_after_grading(state: TutorState):
     if relevant:
         return "generate"
 
-    return "fallback"
+    return "web_search"
 
 
 # ============================================================
@@ -311,8 +302,8 @@ workflow.add_node(
 )
 
 workflow.add_node(
-    "fallback",
-    fallback_node
+    "web_search",
+    web_search_node
 )
 
 
@@ -337,7 +328,7 @@ workflow.add_conditional_edges(
     route_after_grading,
     {
         "generate": "generate",
-        "fallback": "fallback"
+        "web_search": "web_search"
     }
 )
 
@@ -349,10 +340,10 @@ workflow.add_edge(
 )
 
 
-# Fallback → End
+# Web Search → Generate (so the LLM answers using web results)
 workflow.add_edge(
-    "fallback",
-    END
+    "web_search",
+    "generate"
 )
 
 

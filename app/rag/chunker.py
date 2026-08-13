@@ -15,7 +15,6 @@ def chunk_pages(
     Split PDF pages into chunks and attach metadata required
     by the downstream RAG pipeline.
     """
-
     splitter = RecursiveCharacterTextSplitter(
         chunk_size=(
             chunk_size

@@ -24,7 +24,7 @@ def parse_pdf(file_path: str) -> list[Document]:
     loader = PyPDFLoader(str(path))
     pages = loader.load()
 
-    if not pages or all(not page.page_content.strip() for page in pages):
+    if not pages:
         raise ValueError(
             f"No extractable text found in {file_path}. "
             "This may be a scanned/image-only PDF that needs OCR."

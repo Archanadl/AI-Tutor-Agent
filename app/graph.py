@@ -24,8 +24,6 @@ if not logger.handlers:
     )
 
 
-
-
 # ============================================================
 # STATE
 # ============================================================
@@ -109,8 +107,14 @@ def retrieve_node(state: TutorState) -> dict:
     if not question:
         logger.warning("No student question found.")
 
+    # No PDF uploaded — skip RAG entirely and let the graph
+    # fall through to the MCP web_search node instead of
+    # letting retrieve() raise a ValueError.
     if not document_id:
-        logger.warning("No document_id found.")
+        logger.info("No document_id provided. Skipping RAG retrieval.")
+        return {
+            "context": []
+        }
 
     documents = retrieve(
         question=question,
@@ -176,7 +180,7 @@ def grade_node(state: TutorState) -> dict:
     # Ask LLM to grade retrieved context
     response = llm.invoke(formatted_prompt)
     response_text = extract_text(response)
-    
+
     logger.debug("[GRADER OUTPUT]: %s", response_text)
 
     # Try to parse grader JSON
@@ -213,7 +217,7 @@ def generate_node(state: TutorState) -> dict:
         document.page_content
         for document in context
     )
-    
+
     logger.info("Context length provided to LLM: %d chars", len(context_text))
     if context_text:
         logger.debug("Context snippet: %s...", context_text[:100])
@@ -345,13 +349,11 @@ if __name__ == "__main__":
     logger.info("INITIATING AI TUTOR PIPELINE")
 
     initial_state = {
-    "student_question": "What is quantum computing and what is its time complexity?",
-    "document_id": "research_report.pdf"
+        "student_question": "What is quantum computing and what is its time complexity?",
+        "document_id": "research_report.pdf",
     }
 
-    final_state = tutor_graph.invoke(
-        initial_state
-    )
+    final_state = tutor_graph.invoke(initial_state)
 
     print("\n" + "=" * 46)
     print("           FINAL TUTOR ANSWER")

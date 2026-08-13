@@ -3,20 +3,6 @@ mcp_server/web_search_node.py
 
 LangGraph-compatible node that calls the local MCP server's ``web_search``
 tool and appends the results to the CRAG pipeline's ``context`` list.
-
-This replaces the static ``fallback_node`` in ``app/graph.py``.  Instead of
-returning a canned apology, it performs a live DuckDuckGo web search via
-the FastMCP server and feeds the results into the ``generate`` node.
-
-State mutations:
-    * Extends ``state["context"]`` with ``Document`` objects whose
-      ``metadata["source"]`` is the result URL.
-
-Usage in the LangGraph ``StateGraph``::
-
-    from mcp_server.web_search_node import web_search_node
-
-    workflow.add_node("web_search", web_search_node)
 """
 
 from __future__ import annotations
@@ -29,27 +15,16 @@ from langchain_core.documents import Document
 
 logger = logging.getLogger("mcp_server.web_search_node")
 
-# ---------------------------------------------------------------------------
-# MCP server connection defaults
-# ---------------------------------------------------------------------------
 MCP_SERVER_URL = "http://127.0.0.1:8000/mcp"
 DEFAULT_MAX_RESULTS = 3
 
-
-# ---------------------------------------------------------------------------
-# Async implementation — talks to the local FastMCP server
-# ---------------------------------------------------------------------------
 
 async def _call_mcp_web_search(
     query: str,
     max_results: int = DEFAULT_MAX_RESULTS,
     server_url: str = MCP_SERVER_URL,
 ) -> list[dict]:
-    """Connect to the local MCP server and invoke the ``web_search`` tool.
-
-    Returns a list of dicts with ``title``, ``snippet``, ``url`` keys,
-    or an empty list if the server is unreachable / returns an error.
-    """
+    """Connect to the local MCP server and invoke the ``web_search`` tool."""
     try:
         from fastmcp import Client
         from fastmcp.client.transports import StreamableHttpTransport
@@ -73,14 +48,11 @@ async def _call_mcp_web_search(
                 },
             )
 
-            # fastmcp 3.4.6 returns a CallToolResult with a .data
-            # attribute that contains the tool's return value directly.
             raw = None
 
             if hasattr(result, "data") and result.data:
                 raw = result.data
             elif hasattr(result, "content"):
-                # Fallback: iterate over content blocks for text
                 for block in (result.content or []):
                     text = getattr(block, "text", None)
                     if text:
@@ -111,17 +83,10 @@ async def _call_mcp_web_search(
         return []
 
 
-# ---------------------------------------------------------------------------
-# Async node (for async LangGraph graphs)
-# ---------------------------------------------------------------------------
-
 async def _async_web_search_node(state: dict) -> dict:
-    """Async LangGraph node that performs a web search via the MCP server.
-
-    Reads ``student_question`` and ``context`` from ``TutorState``.
-    """
+    """Async LangGraph node that performs a web search via the MCP server."""
     print("\n--- WEB SEARCH (MCP) ---")
-    
+
     question = state.get("student_question", "")
     existing_context = state.get("context", [])
 
@@ -158,23 +123,16 @@ async def _async_web_search_node(state: dict) -> dict:
     }
 
 
-# ---------------------------------------------------------------------------
-# Sync wrapper (drop-in compatible with the existing sync graph)
-# ---------------------------------------------------------------------------
-
 def web_search_node(state: dict) -> dict:
-    """Synchronous LangGraph node — drop-in replacement for the
-    ``fallback_node`` in ``app/graph.py``.
+    """Synchronous LangGraph node — drop-in replacement for a fallback node.
 
     Internally runs the async MCP client via ``asyncio.run()``.  If an
-    event loop is already running (e.g. inside Jupyter or Streamlit),
-    it falls back to running in a separate thread.
+    event loop is already running (e.g. inside Streamlit), it falls back
+    to running in a separate thread.
     """
     try:
-        # Fast path: no loop running → use asyncio.run()
         return asyncio.run(_async_web_search_node(state))
     except RuntimeError:
-        # An event loop is already running (Jupyter, Streamlit, etc.)
         import concurrent.futures
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:

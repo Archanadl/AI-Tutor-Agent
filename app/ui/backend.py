@@ -7,13 +7,9 @@ backend.py
  ↓
 app.graph.tutor_graph
  ↓
-Retrieve → Grade
+Retrieve → Grade → Generate
              ↓
-        ┌────┴────┐
-        ↓         ↓
-     Generate   Web Search (MCP)
-                  ↓
-               Generate
+        Web Search (MCP)
 """
 
 from __future__ import annotations
@@ -29,39 +25,13 @@ from app.rag.vector_store import add_chunks
 
 
 # ============================================================
-# BACKEND MODE
-# ============================================================
-
-# Real LangGraph + RAG + MCP backend is enabled.
-USE_REAL_BACKEND = True
-
-
-# ============================================================
 # DOCUMENT INGESTION
 # ============================================================
 
 def ingest_document(uploaded_file: Any) -> Dict[str, Any]:
     """
-    Ingest a Streamlit UploadedFile into ChromaDB.
-
-    Pipeline:
-        UploadedFile
-            ↓
-        Temporary PDF
-            ↓
-        PDF parser
-            ↓
-        Chunking
-            ↓
-        ChromaDB
-
-    Returns:
-        {
-            "status": "ok" | "error",
-            "chunks": int,
-            "name": str | None,
-            "message": str
-        }
+    Save a Streamlit UploadedFile temporarily, parse it,
+    chunk it and store the chunks in ChromaDB.
     """
 
     if uploaded_file is None:
@@ -72,14 +42,8 @@ def ingest_document(uploaded_file: Any) -> Dict[str, Any]:
             "message": "No file provided.",
         }
 
-    temp_path = None
-
     try:
         file_name = uploaded_file.name
-
-        # ----------------------------------------------------
-        # Validate file type
-        # ----------------------------------------------------
 
         if not file_name.lower().endswith(".pdf"):
             return {
@@ -89,61 +53,52 @@ def ingest_document(uploaded_file: Any) -> Dict[str, Any]:
                 "message": "Only PDF files are supported.",
             }
 
-        # ----------------------------------------------------
-        # Save uploaded file temporarily
-        # ----------------------------------------------------
-
+        # Save Streamlit UploadedFile temporarily because
+        # PyPDFLoader expects a file path.
         with tempfile.NamedTemporaryFile(
             delete=False,
             suffix=".pdf",
         ) as temp_file:
+
             temp_file.write(uploaded_file.getvalue())
             temp_path = temp_file.name
 
-        # ----------------------------------------------------
-        # 1. Parse PDF
-        # ----------------------------------------------------
+        try:
+            # ------------------------------------------------
+            # 1. Parse PDF
+            # ------------------------------------------------
 
-        pages = parse_pdf(temp_path)
+            pages = parse_pdf(temp_path)
 
-        if not pages:
+            # ------------------------------------------------
+            # 2. Chunk PDF
+            # ------------------------------------------------
+
+            chunks = chunk_pages(
+                pages=pages,
+                document_id=file_name,
+                source_name=file_name,
+            )
+
+            # ------------------------------------------------
+            # 3. Store in ChromaDB
+            # ------------------------------------------------
+
+            add_chunks(chunks)
+
             return {
-                "status": "error",
-                "chunks": 0,
+                "status": "ok",
+                "chunks": len(chunks),
                 "name": file_name,
-                "message": "No readable text was found in the PDF.",
+                "message": f"{len(chunks)} chunks indexed successfully.",
             }
 
-        # ----------------------------------------------------
-        # 2. Chunk PDF
-        # ----------------------------------------------------
-
-        chunks = chunk_pages(
-            pages=pages,
-            document_id=file_name,
-            source_name=file_name,
-        )
-
-        if not chunks:
-            return {
-                "status": "error",
-                "chunks": 0,
-                "name": file_name,
-                "message": "No chunks could be created from the PDF.",
-            }
-
-        # ----------------------------------------------------
-        # 3. Store chunks in ChromaDB
-        # ----------------------------------------------------
-
-        add_chunks(chunks)
-
-        return {
-            "status": "ok",
-            "chunks": len(chunks),
-            "name": file_name,
-            "message": f"{len(chunks)} chunks indexed successfully.",
-        }
+        finally:
+            # Remove temporary PDF
+            try:
+                os.remove(temp_path)
+            except OSError:
+                pass
 
     except Exception as exc:
         return {
@@ -152,17 +107,6 @@ def ingest_document(uploaded_file: Any) -> Dict[str, Any]:
             "name": getattr(uploaded_file, "name", None),
             "message": str(exc),
         }
-
-    finally:
-        # ----------------------------------------------------
-        # Remove temporary PDF
-        # ----------------------------------------------------
-
-        if temp_path:
-            try:
-                os.remove(temp_path)
-            except OSError:
-                pass
 
 
 # ============================================================
@@ -176,179 +120,112 @@ def ask_tutor(
     uploaded_file: Any = None,
 ) -> Dict[str, Any]:
     """
-    Send a student question from the Streamlit UI to LangGraph.
-
-    Current graph state expects:
-
-        student_question
-        document_id
-
-    The graph handles:
-
-        PDF available
-            ↓
-        RAG retrieval
-            ↓
-        Grader
-            ↓
-        Generate
-
-        OR
-
-        No relevant RAG context
-            ↓
-        MCP Web Search
-            ↓
-        Generate
-
-        OR
-
-        No PDF
-            ↓
-        Skip RAG retrieval
-            ↓
-        Web Search
-            ↓
-        Generate
+    Send a question from the Streamlit UI to the LangGraph tutor agent.
     """
 
-    if not USE_REAL_BACKEND:
-        return _mock(question, document)
-
     try:
-        # ----------------------------------------------------
-        # Validate question
-        # ----------------------------------------------------
-
-        if not question or not question.strip():
-            return {
-                "answer": "Please enter a question.",
-                "source": None,
-                "confidence": None,
-                "source_type": "NONE",
-                "trace": [],
-                "agent_status": "error",
-            }
-
-        # ----------------------------------------------------
+        # ---------------------------------------------------------
         # Determine document ID
-        # ----------------------------------------------------
-
-        document_id = document or ""
+        # ---------------------------------------------------------
+        document_id = None
 
         if uploaded_file is not None:
-            document_id = uploaded_file.name
+            document_id = getattr(uploaded_file, "name", None)
 
-        # ----------------------------------------------------
-        # Invoke LangGraph
-        # ----------------------------------------------------
+        if not document_id and document:
+            document_id = document
 
-        result = tutor_graph.invoke(
-            {
-                "student_question": question,
-                "document_id": document_id,
-            }
-        )
+        # ---------------------------------------------------------
+        # Build graph state
+        # ---------------------------------------------------------
+        state = {
+            "student_question": question,
+        }
 
-        # ----------------------------------------------------
-        # Extract final answer
-        # ----------------------------------------------------
+        if document_id:
+            state["document_id"] = document_id
 
+        # ---------------------------------------------------------
+        # Run LangGraph
+        # ---------------------------------------------------------
+        result = tutor_graph.invoke(state)
+
+        # ---------------------------------------------------------
+        # Extract response
+        # ---------------------------------------------------------
         answer = result.get(
             "student_answer",
-            "I couldn't generate an answer.",
+            "No answer was generated.",
         )
 
-        # ----------------------------------------------------
-        # Determine source
-        # ----------------------------------------------------
+        context = result.get("context", [])
+        relevance = result.get("relevance", "none")
 
-        context = result.get("context", []) or []
-
-        source_type = "RAG" if document_id else "WEB"
-        source = document_id if document_id else None
-
-        web_sources = []
-        rag_sources = []
-
-        for doc in context:
-            metadata = getattr(doc, "metadata", {}) or {}
-
-            source_value = metadata.get("source")
-
-            if not source_value:
-                continue
-
-            source_value = str(source_value)
-
-            if (
-                source_value.startswith("http://")
-                or source_value.startswith("https://")
-            ):
-                web_sources.append(source_value)
-            else:
-                rag_sources.append(source_value)
-
-        # ----------------------------------------------------
-        # MCP / Web search detection
-        # ----------------------------------------------------
-
-        if web_sources:
-            source_type = "WEB"
-            source = web_sources[0]
-
-        elif rag_sources:
+        # ---------------------------------------------------------
+        # Determine source type
+        # ---------------------------------------------------------
+        if relevance == "full":
             source_type = "RAG"
-            source = rag_sources[0]
+        elif context:
+            source_type = "WEB"
+        else:
+            source_type = "NONE"
 
-        # ----------------------------------------------------
-        # Build pipeline trace
-        # ----------------------------------------------------
+        # ---------------------------------------------------------
+        # Extract source
+        # ---------------------------------------------------------
+        source = None
 
+        if context:
+            first_doc = context[0]
+
+            if hasattr(first_doc, "metadata"):
+                metadata = first_doc.metadata
+
+                # RAG document source
+                source = metadata.get("source")
+
+                # Web-search source
+                if source is None:
+                    source = metadata.get("url")
+
+        if source is None and source_type == "RAG":
+            source = document_id
+
+        # ---------------------------------------------------------
+        # Calculate confidence (average across retrieved chunks,
+        # not just the single best-scoring chunk)
+        # ---------------------------------------------------------
+        confidence = None
+
+        if source_type == "RAG" and context:
+            scores = []
+
+            for doc in context:
+                if hasattr(doc, "metadata"):
+                    score = doc.metadata.get("relevance_score")
+
+                    if score is not None:
+                        scores.append(float(score))
+
+            if scores:
+                confidence = round(sum(scores) / len(scores), 2)
+
+        # ---------------------------------------------------------
+        # Execution trace
+        # ---------------------------------------------------------
         trace = [
             "retrieve",
             "grade",
         ]
 
         if source_type == "WEB":
-            trace.append("web")
+            trace.append("web_search")
 
-        trace.extend(
-            [
-                "generate",
-                "done",
-            ]
-        )
-
-        # ----------------------------------------------------
-        # Calculate confidence
-        # ----------------------------------------------------
-
-        confidence = None
-
-        relevance_scores = []
-
-        for doc in context:
-            metadata = getattr(doc, "metadata", {}) or {}
-
-            score = metadata.get("relevance_score")
-
-            if isinstance(score, (int, float)):
-                relevance_scores.append(float(score))
-
-        if relevance_scores:
-            confidence = max(
-                0.0,
-                min(
-                    1.0,
-                    sum(relevance_scores)
-                    / len(relevance_scores),
-                ),
-            )
-
-        # ----------------------------------------------------
-        # Return UI response contract
-        # ----------------------------------------------------
+        trace.extend([
+            "generate",
+            "done",
+        ])
 
         return {
             "answer": answer,
@@ -368,58 +245,9 @@ def ask_tutor(
             "source": None,
             "confidence": None,
             "source_type": "NONE",
-            "trace": ["done"],
+            "trace": ["error"],
             "agent_status": "error",
         }
-
-
-# ============================================================
-# MOCK BACKEND
-# ============================================================
-
-def _mock(
-    question: str,
-    document: Optional[str],
-) -> Dict[str, Any]:
-    """
-    Mock response retained for local UI testing if needed.
-    """
-
-    if document:
-        return {
-            "answer": (
-                f"**Mock answer for:** _{question}_\n\n"
-                "This response is produced by the UI layer."
-            ),
-            "source": document,
-            "confidence": 0.92,
-            "source_type": "RAG",
-            "trace": [
-                "retrieve",
-                "grade",
-                "generate",
-                "done",
-            ],
-            "agent_status": "completed",
-        }
-
-    return {
-        "answer": (
-            f"**Mock web-fallback answer for:** _{question}_\n\n"
-            "No study material is loaded."
-        ),
-        "source": "duckduckgo.com",
-        "confidence": 0.61,
-        "source_type": "WEB",
-        "trace": [
-            "retrieve",
-            "grade",
-            "web",
-            "generate",
-            "done",
-        ],
-        "agent_status": "completed",
-    }
 
 
 # ============================================================
@@ -431,27 +259,13 @@ def generate_quiz(
     difficulty: str,
     count: int,
 ) -> List[Dict[str, Any]]:
-    """
-    Temporary quiz question bank.
-
-    This can later be replaced with the quiz-generation agent
-    without changing the UI interface.
-    """
 
     bank = [
         {
             "q": "Which transport-layer protocol is connection-oriented?",
-            "options": [
-                "UDP",
-                "TCP",
-                "IP",
-                "HTTP",
-            ],
+            "options": ["UDP", "TCP", "IP", "HTTP"],
             "answer": "TCP",
-            "why": (
-                "TCP establishes a connection using "
-                "the three-way handshake."
-            ),
+            "why": "TCP establishes a connection using the three-way handshake.",
         },
         {
             "q": "What does DBMS stand for?",
@@ -462,56 +276,26 @@ def generate_quiz(
                 "Data Management Software",
             ],
             "answer": "Database Management System",
-            "why": (
-                "A DBMS manages storage, retrieval "
-                "and integrity of data."
-            ),
+            "why": "A DBMS manages storage, retrieval and integrity of data.",
         },
         {
             "q": "Which structure follows FIFO ordering?",
-            "options": [
-                "Stack",
-                "Tree",
-                "Queue",
-                "Graph",
-            ],
+            "options": ["Stack", "Tree", "Queue", "Graph"],
             "answer": "Queue",
-            "why": (
-                "Queues remove the earliest inserted "
-                "element first."
-            ),
+            "why": "Queues remove the earliest inserted element first.",
         },
         {
             "q": "Which normal form removes partial dependencies?",
-            "options": [
-                "1NF",
-                "2NF",
-                "3NF",
-                "BCNF",
-            ],
+            "options": ["1NF", "2NF", "3NF", "BCNF"],
             "answer": "2NF",
-            "why": (
-                "2NF requires full functional dependency "
-                "on the whole key."
-            ),
+            "why": "2NF requires full functional dependency on the whole key.",
         },
         {
             "q": "Which scheduling policy can starve long jobs?",
-            "options": [
-                "FCFS",
-                "Round Robin",
-                "SJF",
-                "Priority ageing",
-            ],
+            "options": ["FCFS", "Round Robin", "SJF", "Priority ageing"],
             "answer": "SJF",
-            "why": (
-                "Shortest-Job-First keeps preferring "
-                "short bursts."
-            ),
+            "why": "Shortest-Job-First keeps preferring short bursts.",
         },
     ]
-
-    if count <= 0:
-        return []
 
     return (bank * ((count // len(bank)) + 1))[:count]

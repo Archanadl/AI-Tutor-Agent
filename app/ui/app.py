@@ -3,18 +3,23 @@
 import os
 import sys
 
-sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+# Add project root to Python path
+PROJECT_ROOT = os.path.abspath(
+    os.path.join(os.path.dirname(__file__), "../..")
+)
 
-import streamlit as st                        # noqa: E402
+if PROJECT_ROOT not in sys.path:
+    sys.path.insert(0, PROJECT_ROOT)
 
-from sidebar import render_sidebar            # noqa: E402
-from styles import inject_theme, page_config   # noqa: E402
-from utils import init_state                   # noqa: E402
-from views import chat, home, progress, quiz, settings, study_plan  # noqa: E402
+import streamlit as st
+
+from app.ui.sidebar import render_sidebar
+from app.ui.styles import inject_theme, page_config
+from app.ui.utils import init_state
+from app.ui.views import chat, home, progress, quiz, settings, study_plan
 
 page_config()
 init_state()      # must run before inject_theme(), which reads saved preferences
-inject_theme()
 
 render_sidebar()
 

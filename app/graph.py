@@ -35,8 +35,8 @@ class TutorState(TypedDict, total=False):
     # Retrieved study material
     context: List[Document]
 
-    # Grader result
-    relevant: bool
+    # Grader result: "full" | "partial" | "none"
+    relevance: str
 
     # Final answer
     student_answer: str
@@ -156,9 +156,9 @@ def grade_node(state: TutorState) -> dict:
 
     # No retrieved context
     if not context:
-        logger.info("No context retrieved. Relevant: False")
+        logger.info("No context retrieved. Relevance: none")
         return {
-            "relevant": False
+            "relevance": "none"
         }
 
     # Convert documents into plain text
@@ -167,10 +167,8 @@ def grade_node(state: TutorState) -> dict:
         for document in context
     )
 
-    # Get actual grader prompt
-    grader_prompt_template = (
-        PromptManager.get_grader_prompt()
-    )
+    # Get grader prompt
+    grader_prompt_template = PromptManager.get_grader_prompt()
 
     formatted_prompt = grader_prompt_template.format(
         context=context_text,
@@ -179,25 +177,34 @@ def grade_node(state: TutorState) -> dict:
 
     # Ask LLM to grade retrieved context
     response = llm.invoke(formatted_prompt)
-    response_text = extract_text(response)
+    response_text = extract_text(response).strip()
 
     logger.debug("[GRADER OUTPUT]: %s", response_text)
 
-    # Try to parse grader JSON
+    # Parse grader JSON
     try:
         result = json.loads(response_text)
-        relevant = bool(result.get("relevant", False))
-    except (json.JSONDecodeError, AttributeError):
-        # Fallback if model doesn't return perfect JSON
-        relevant = (
-            '"relevant": true'
-            in response_text.lower()
-        )
+        relevance = result.get("relevance", "none").lower()
 
-    logger.info("Relevant: %s", relevant)
+    except (json.JSONDecodeError, AttributeError):
+        logger.warning(
+            "Could not parse grader response: %s",
+            response_text
+        )
+        relevance = "none"
+
+    # Validate grader output
+    if relevance not in {"full", "partial", "none"}:
+        logger.warning(
+            "Invalid relevance value '%s'. Treating as none.",
+            relevance
+        )
+        relevance = "none"
+
+    logger.info("Relevance: %s", relevance)
 
     return {
-        "relevant": relevant
+        "relevance": relevance
     }
 
 
@@ -256,11 +263,12 @@ def generate_node(state: TutorState) -> dict:
 
 def route_after_grading(state: TutorState) -> str:
 
-    relevant = state.get("relevant", False)
+    relevance = state.get("relevance", "none")
 
-    if relevant:
+    if relevance == "full":
         return "generate"
 
+    # Partial or none → use web search
     return "web_search"
 
 

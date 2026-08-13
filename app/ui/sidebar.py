@@ -2,16 +2,13 @@
 
 import streamlit as st
 
-from backend import ingest_document
-from utils import create_new_chat, delete_chat, goto, sync_uploads
+from app.ui.backend import ingest_document
+from app.ui.utils import create_new_chat, delete_chat, goto, sync_uploads
 
 NAV = [
     ("Home", "🏠 Home"),
     ("Chat", "💬 Chat"),
-    ("Quiz", "📝 Quiz"),
-    ("Study Plan", "📅 Study Plan"),
-    ("Progress", "📊 Progress"),
-    ("Settings", "⚙️ Settings"),
+    ("Quiz", "📝 Settings"),
 ]
 
 

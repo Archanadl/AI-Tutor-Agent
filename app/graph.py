@@ -11,6 +11,7 @@ from app.rag.retriever import retrieve
 from app.prompts.prompt_manager import PromptManager
 from app.rag.config import settings
 from mcp_server.web_search_node import web_search_node
+from app.metrics import start_timer, elapsed_ms, create_metrics
 
 # ============================================================
 # LOGGING
@@ -40,6 +41,9 @@ class TutorState(TypedDict, total=False):
 
     # Final answer
     student_answer: str
+
+    # Per-node timing (ms)
+    metrics: dict
 
 
 # ============================================================
@@ -101,6 +105,8 @@ def retrieve_node(state: TutorState) -> dict:
 
     logger.info("--- RETRIEVING CONTEXT ---")
 
+    timer = start_timer()
+
     question = state.get("student_question", "")
     document_id = state.get("document_id", "")
 
@@ -113,7 +119,11 @@ def retrieve_node(state: TutorState) -> dict:
     if not document_id:
         logger.info("No document_id provided. Skipping RAG retrieval.")
         return {
-            "context": []
+            "context": [],
+            "metrics": {
+                **state.get("metrics", create_metrics()),
+                "retrieve_ms": elapsed_ms(timer),
+            },
         }
 
     documents = retrieve(
@@ -139,7 +149,11 @@ def retrieve_node(state: TutorState) -> dict:
         logger.debug("Text: %s...", document.page_content[:300])
 
     return {
-        "context": documents
+        "context": documents,
+        "metrics": {
+            **state.get("metrics", create_metrics()),
+            "retrieve_ms": elapsed_ms(timer),
+        },
     }
 
 
@@ -151,6 +165,8 @@ def grade_node(state: TutorState) -> dict:
 
     logger.info("--- GRADING RETRIEVED CONTEXT ---")
 
+    timer = start_timer()
+
     question = state.get("student_question", "")
     context = state.get("context", [])
 
@@ -158,7 +174,11 @@ def grade_node(state: TutorState) -> dict:
     if not context:
         logger.info("No context retrieved. Relevance: none")
         return {
-            "relevance": "none"
+            "relevance": "none",
+            "metrics": {
+                **state.get("metrics", create_metrics()),
+                "grade_ms": elapsed_ms(timer),
+            },
         }
 
     # Convert documents into plain text
@@ -204,7 +224,11 @@ def grade_node(state: TutorState) -> dict:
     logger.info("Relevance: %s", relevance)
 
     return {
-        "relevance": relevance
+        "relevance": relevance,
+        "metrics": {
+            **state.get("metrics", create_metrics()),
+            "grade_ms": elapsed_ms(timer),
+        },
     }
 
 
@@ -215,6 +239,8 @@ def grade_node(state: TutorState) -> dict:
 def generate_node(state: TutorState) -> dict:
 
     logger.info("--- GENERATING ANSWER ---")
+
+    timer = start_timer()
 
     question = state.get("student_question", "")
     context = state.get("context", [])
@@ -244,7 +270,11 @@ def generate_node(state: TutorState) -> dict:
     answer = extract_text(response)
 
     return {
-        "student_answer": answer
+        "student_answer": answer,
+        "metrics": {
+            **state.get("metrics", create_metrics()),
+            "generate_ms": elapsed_ms(timer),
+        },
     }
 
 
@@ -255,6 +285,10 @@ def generate_node(state: TutorState) -> dict:
 # It connects to the local FastMCP server (port 8000), performs a
 # DuckDuckGo search, and appends the results to state["context"]
 # so the generate node can use them to answer the student.
+#
+# NOTE: Timing for this node is intentionally NOT added yet —
+# we're keeping web_search_node.py untouched until basic metrics
+# are verified end-to-end.
 
 
 # ============================================================
@@ -373,5 +407,7 @@ if __name__ == "__main__":
             "No answer generated."
         )
     )
+
+    print("\nMetrics:", final_state.get("metrics"))
 
     print("\n==============================================")

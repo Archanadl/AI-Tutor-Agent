@@ -22,6 +22,7 @@ from app.graph import tutor_graph
 from app.rag.chunker import chunk_pages
 from app.rag.pdf_parser import parse_pdf
 from app.rag.vector_store import add_chunks
+from app.metrics import start_timer, elapsed_ms
 
 
 # ============================================================
@@ -146,9 +147,13 @@ def ask_tutor(
             state["document_id"] = document_id
 
         # ---------------------------------------------------------
-        # Run LangGraph
+        # Run LangGraph (timed)
         # ---------------------------------------------------------
+        timer = start_timer()
+
         result = tutor_graph.invoke(state)
+
+        total_ms = elapsed_ms(timer)
 
         # ---------------------------------------------------------
         # Extract response
@@ -234,6 +239,10 @@ def ask_tutor(
             "source_type": source_type,
             "trace": trace,
             "agent_status": "completed",
+            "metrics": {
+                **result.get("metrics", {}),
+                "total_ms": total_ms,
+            },
         }
 
     except Exception as exc:
@@ -247,6 +256,7 @@ def ask_tutor(
             "source_type": "NONE",
             "trace": ["error"],
             "agent_status": "error",
+            "metrics": {},
         }
 
 

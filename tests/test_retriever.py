@@ -1,27 +1,38 @@
+import pytest
+
 from app.rag.retriever import retrieve
 
 
-question = "What is quantum computing?"
+DOCUMENT_ID = "research_report.pdf"
 
-documents = retrieve(
-    question=question,
-    document_id="research_report.pdf",
-    k=3,
-)
 
-print("Retrieved documents:", len(documents))
-
-for i, document in enumerate(documents, start=1):
-    print(f"\n--- Result {i} ---")
-
-    print("Source:", document.metadata.get("source"))
-    print("Page:", document.metadata.get("page"))
-    print("Document ID:", document.metadata.get("document_id"))
-    print("Chunk:", document.metadata.get("chunk_index"))
-    print(
-        "Relevance Score:",
-        document.metadata.get("relevance_score")
+def test_retrieve_returns_documents_for_relevant_question():
+    documents = retrieve(
+        question="What is quantum computing?",
+        document_id=DOCUMENT_ID,
+        k=3,
     )
 
-    print("Text:")
-    print(document.page_content[:500])
+    assert isinstance(documents, list)
+    assert len(documents) > 0
+
+    for document in documents:
+        assert document.page_content
+        assert document.metadata.get("document_id") == DOCUMENT_ID
+        assert "relevance_score" in document.metadata
+
+
+def test_retrieve_rejects_empty_question():
+    with pytest.raises(ValueError, match="Question cannot be empty"):
+        retrieve(
+            question="",
+            document_id=DOCUMENT_ID,
+        )
+
+
+def test_retrieve_rejects_missing_document_id():
+    with pytest.raises(ValueError, match="document_id cannot be empty"):
+        retrieve(
+            question="What is quantum computing?",
+            document_id="",
+        )

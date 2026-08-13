@@ -120,6 +120,8 @@ async def _async_web_search_node(state: dict) -> dict:
 
     Reads ``student_question`` and ``context`` from ``TutorState``.
     """
+    print("\n--- WEB SEARCH (MCP) ---")
+    
     question = state.get("student_question", "")
     existing_context = state.get("context", [])
 

@@ -1,34 +1,29 @@
-import os
 import json
+import logging
 from typing import TypedDict, List
 
-from dotenv import load_dotenv
-
-# ============================================================
-# LOAD ENVIRONMENT VARIABLES
-# ============================================================
-
-load_dotenv()
-
-# Check that Groq API key exists
-if not os.getenv("GROQ_API_KEY"):
-    raise ValueError(
-        "GROQ_API_KEY is not set. "
-        "Please add GROQ_API_KEY=your_key to the .env file."
-    )
-
-
-# ============================================================
-# IMPORTS
-# ============================================================
-
 from langchain_core.documents import Document
+from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
 from langgraph.graph import StateGraph, END
 
 from app.rag.retriever import retrieve
 from app.prompts.prompt_manager import PromptManager
+from app.rag.config import settings
 from mcp_server.web_search_node import web_search_node
+
+# ============================================================
+# LOGGING
+# ============================================================
+
+logger = logging.getLogger(__name__)
+if not logger.handlers:
+    logging.basicConfig(
+        level=logging.INFO,
+        format="%(asctime)s | %(name)s | %(levelname)s | %(message)s"
+    )
+
+
 
 
 # ============================================================
@@ -53,11 +48,23 @@ class TutorState(TypedDict, total=False):
 # LLM
 # ============================================================
 
-llm = ChatGroq(
-    model="llama-3.1-8b-instant",
-    temperature=0.2,
-    api_key=os.getenv("GROQ_API_KEY")
-)
+# Dynamic LLM Initialization based on active configuration
+if settings.google_api_key:
+    llm = ChatGoogleGenerativeAI(
+        model=settings.gemini_model,
+        temperature=settings.llm_temperature,
+        google_api_key=settings.google_api_key
+    )
+elif settings.groq_api_key:
+    llm = ChatGroq(
+        model=settings.groq_model,
+        temperature=settings.llm_temperature,
+        api_key=settings.groq_api_key
+    )
+else:
+    raise ValueError(
+        "No API key provided. Please set either GOOGLE_API_KEY or GROQ_API_KEY in your .env file."
+    )
 
 
 # ============================================================
@@ -92,18 +99,18 @@ def extract_text(response):
 # NODE 1: RETRIEVE
 # ============================================================
 
-def retrieve_node(state: TutorState):
+def retrieve_node(state: TutorState) -> dict:
 
-    print("\n--- RETRIEVING CONTEXT ---")
+    logger.info("--- RETRIEVING CONTEXT ---")
 
     question = state.get("student_question", "")
     document_id = state.get("document_id", "")
 
     if not question:
-        print("WARNING: No student question found.")
+        logger.warning("No student question found.")
 
     if not document_id:
-        print("WARNING: No document_id found.")
+        logger.warning("No document_id found.")
 
     documents = retrieve(
         question=question,
@@ -114,35 +121,18 @@ def retrieve_node(state: TutorState):
     if documents is None:
         documents = []
 
-    print(f"Retrieved documents: {len(documents)}")
+    logger.info("Retrieved documents: %d", len(documents))
 
-    # Print retrieved context for debugging
+    # Log retrieved context for debugging
     for i, document in enumerate(documents, start=1):
-
-        print(f"\nDocument {i}")
-
-        print(
-            "Source:",
-            document.metadata.get("source", "N/A")
+        logger.debug(
+            "Document %d | Source: %s | Page: %s | Score: %s",
+            i,
+            document.metadata.get("source", "N/A"),
+            document.metadata.get("page", "N/A"),
+            document.metadata.get("relevance_score", "N/A")
         )
-
-        print(
-            "Page:",
-            document.metadata.get("page", "N/A")
-        )
-
-        print(
-            "Relevance score:",
-            document.metadata.get(
-                "relevance_score",
-                "N/A"
-            )
-        )
-
-        print(
-            "Text:",
-            document.page_content[:300]
-        )
+        logger.debug("Text: %s...", document.page_content[:300])
 
     return {
         "context": documents
@@ -153,19 +143,16 @@ def retrieve_node(state: TutorState):
 # NODE 2: GRADE RETRIEVED CONTEXT
 # ============================================================
 
-def grade_node(state: TutorState):
+def grade_node(state: TutorState) -> dict:
 
-    print("\n--- GRADING RETRIEVED CONTEXT ---")
+    logger.info("--- GRADING RETRIEVED CONTEXT ---")
 
     question = state.get("student_question", "")
     context = state.get("context", [])
 
     # No retrieved context
     if not context:
-
-        print("No context retrieved.")
-        print("Relevant: False")
-
+        logger.info("No context retrieved. Relevant: False")
         return {
             "relevant": False
         }
@@ -188,30 +175,22 @@ def grade_node(state: TutorState):
 
     # Ask LLM to grade retrieved context
     response = llm.invoke(formatted_prompt)
-
     response_text = extract_text(response)
-
-    print("[GRADER OUTPUT]:")
-    print(response_text)
+    
+    logger.debug("[GRADER OUTPUT]: %s", response_text)
 
     # Try to parse grader JSON
     try:
-
         result = json.loads(response_text)
-
-        relevant = bool(
-            result.get("relevant", False)
-        )
-
+        relevant = bool(result.get("relevant", False))
     except (json.JSONDecodeError, AttributeError):
-
         # Fallback if model doesn't return perfect JSON
         relevant = (
             '"relevant": true'
             in response_text.lower()
         )
 
-    print("Relevant:", relevant)
+    logger.info("Relevant: %s", relevant)
 
     return {
         "relevant": relevant
@@ -222,9 +201,9 @@ def grade_node(state: TutorState):
 # NODE 3: GENERATE ANSWER
 # ============================================================
 
-def generate_node(state: TutorState):
+def generate_node(state: TutorState) -> dict:
 
-    print("\n--- GENERATING ANSWER ---")
+    logger.info("--- GENERATING ANSWER ---")
 
     question = state.get("student_question", "")
     context = state.get("context", [])
@@ -234,6 +213,10 @@ def generate_node(state: TutorState):
         document.page_content
         for document in context
     )
+    
+    logger.info("Context length provided to LLM: %d chars", len(context_text))
+    if context_text:
+        logger.debug("Context snippet: %s...", context_text[:100])
 
     # Get actual generator prompt
     generator_prompt_template = (
@@ -245,9 +228,8 @@ def generate_node(state: TutorState):
         question=question
     )
 
-    # Generate answer using Groq
+    # Generate answer using LLM
     response = llm.invoke(formatted_prompt)
-
     answer = extract_text(response)
 
     return {
@@ -268,7 +250,7 @@ def generate_node(state: TutorState):
 # CONDITIONAL ROUTING
 # ============================================================
 
-def route_after_grading(state: TutorState):
+def route_after_grading(state: TutorState) -> str:
 
     relevant = state.get("relevant", False)
 
@@ -360,9 +342,7 @@ tutor_graph = workflow.compile()
 
 if __name__ == "__main__":
 
-    print("\n==============================================")
-    print("       INITIATING AI TUTOR PIPELINE")
-    print("==============================================")
+    logger.info("INITIATING AI TUTOR PIPELINE")
 
     initial_state = {
     "student_question": "What is quantum computing and what is its time complexity?",
@@ -373,9 +353,9 @@ if __name__ == "__main__":
         initial_state
     )
 
-    print("\n==============================================")
+    print("\n" + "=" * 46)
     print("           FINAL TUTOR ANSWER")
-    print("==============================================")
+    print("=" * 46)
 
     print(
         final_state.get(

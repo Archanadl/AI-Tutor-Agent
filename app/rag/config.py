@@ -10,6 +10,10 @@ class Settings(BaseSettings):
     min_relevance_score: float = 0.5
     google_api_key: str = ""
     gemini_model: str = "gemini-3.6-flash"
+    
+    groq_api_key: str = ""
+    groq_model: str = "llama-3.1-8b-instant"
+    
     llm_temperature: float = 0.0
 
     model_config = SettingsConfigDict(

@@ -1,5 +1,4 @@
 # AI-Tutor-Agent
-# AI Tutor Agent
 
 ## Overview
 
@@ -128,7 +127,17 @@ GOOGLE_API_KEY=your_google_api_key
 GROQ_API_KEY=your_groq_api_key
 ```
 
-Run the application
+Run the MCP Server (Web Search Tool)
+
+Open a new terminal, activate the environment, and run:
+
+```bash
+python -m mcp_server.server
+```
+
+Run the application (Frontend)
+
+Open another terminal, activate the environment, and run:
 
 ```bash
 streamlit run app/ui/app.py
@@ -177,4 +186,4 @@ streamlit run app/ui/app.py
 
 ## License
 
-This project is developed for educational and research purposes as part of the Dell Technologies AI Internship.
+This project is developed for educational and research purposes as part of the Dell Technologies GSOP'26.

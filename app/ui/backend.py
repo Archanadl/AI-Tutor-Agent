@@ -18,7 +18,10 @@ import os
 import tempfile
 from typing import Any, Dict, List, Optional
 
-from app.graph import tutor_graph
+import json
+
+from app.graph import tutor_graph, llm, extract_text
+from app.prompts.prompt_manager import PromptManager
 from app.rag.chunker import chunk_pages
 from app.rag.pdf_parser import parse_pdf
 from app.rag.vector_store import add_chunks
@@ -270,42 +273,34 @@ def generate_quiz(
     count: int,
 ) -> List[Dict[str, Any]]:
 
-    bank = [
-        {
-            "q": "Which transport-layer protocol is connection-oriented?",
-            "options": ["UDP", "TCP", "IP", "HTTP"],
-            "answer": "TCP",
-            "why": "TCP establishes a connection using the three-way handshake.",
-        },
-        {
-            "q": "What does DBMS stand for?",
-            "options": [
-                "Database Management System",
-                "Data Backup Management System",
-                "Database Machine System",
-                "Data Management Software",
-            ],
-            "answer": "Database Management System",
-            "why": "A DBMS manages storage, retrieval and integrity of data.",
-        },
-        {
-            "q": "Which structure follows FIFO ordering?",
-            "options": ["Stack", "Tree", "Queue", "Graph"],
-            "answer": "Queue",
-            "why": "Queues remove the earliest inserted element first.",
-        },
-        {
-            "q": "Which normal form removes partial dependencies?",
-            "options": ["1NF", "2NF", "3NF", "BCNF"],
-            "answer": "2NF",
-            "why": "2NF requires full functional dependency on the whole key.",
-        },
-        {
-            "q": "Which scheduling policy can starve long jobs?",
-            "options": ["FCFS", "Round Robin", "SJF", "Priority ageing"],
-            "answer": "SJF",
-            "why": "Shortest-Job-First keeps preferring short bursts.",
-        },
-    ]
+    prompt_template = PromptManager.get_quiz_prompt()
+    formatted_prompt = prompt_template.format(
+        topic=topic,
+        difficulty=difficulty,
+        count=count
+    )
 
-    return (bank * ((count // len(bank)) + 1))[:count]
+    try:
+        response = llm.invoke(formatted_prompt)
+        response_text = extract_text(response).strip()
+        
+        # Clean up markdown formatting if the LLM wrapped it in ```json ... ```
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        elif response_text.startswith("```"):
+            response_text = response_text[3:]
+            
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+            
+        response_text = response_text.strip()
+        
+        quiz_data = json.loads(response_text)
+        
+        if isinstance(quiz_data, list):
+            return quiz_data
+        else:
+            return []
+    except Exception as e:
+        print(f"Error generating quiz: {e}")
+        return []

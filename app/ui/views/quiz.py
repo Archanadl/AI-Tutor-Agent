@@ -26,15 +26,10 @@ def render():
     col1, col2 = st.columns(2)
 
     with col1:
-        topic = st.selectbox(
+        topic = st.text_input(
             "📚 Topic",
-            [
-                "Entire Document",
-                "Computer Networks",
-                "Database Management Systems",
-                "Operating Systems",
-                "Machine Learning",
-            ],
+            value="Computer Networks",
+            placeholder="Type any topic here...",
         )
 
     with col2:

@@ -1,8 +1,8 @@
 from langchain_core.prompts import PromptTemplate
 
 GRADER_PROMPT = PromptTemplate(
-    input_variables=["question", "context"],
-    template="""
+input_variables=["question", "context"],
+template="""
 You are an expert document relevance evaluator for an AI Tutor.
 
 Your task is to evaluate whether the retrieved context contains enough information to answer the user's question.
@@ -31,31 +31,24 @@ Instructions:
 
 9. If even an important part of the question cannot be answered from the retrieved context, classify it as "partial".
 
-10. If the question is unrelated to the retrieved context, classify it as "none".
+10. If the retrieved context is unrelated or provides no useful information for the question, classify it as "none".
 
 11. Return ONLY valid JSON.
 
 12. Do NOT include explanations, reasoning, markdown, code blocks, or any extra text.
 
-13. The "relevance" value MUST be exactly one of:
-    "full", "partial", or "none".
-
-Return exactly one JSON object:
+Return exactly one of the following JSON structures:
 
 {{
-    "relevance": "full"
+"relevance": "full"
 }}
 
-OR
-
 {{
-    "relevance": "partial"
+"relevance": "partial"
 }}
 
-OR
-
 {{
-    "relevance": "none"
+"relevance": "none"
 }}
 
 User Question:

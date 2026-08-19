@@ -12,7 +12,9 @@ def validate_input(
     current_level: str,
     topics: list[str],
     daily_hours: float,
-    duration_days: int
+    duration_days: int,
+    plan_type: str = "learning",
+    exam_date: str | None = None,
 ):
     """
     Validate the information required to create
@@ -49,14 +51,25 @@ def validate_input(
         raise ValueError(
             "Number of study sessions must be greater than 0."
         )
+    if plan_type not in {"learning", "exam_preparation"}:
+        raise ValueError(
+        "plan_type must be either 'learning' or 'exam_preparation'."
+    )
+
+    if plan_type == "exam_preparation" and not exam_date:
+        raise ValueError(
+        "exam_date is required for exam preparation mode."
+    )
 
     return {
-        "goal": goal.strip(),
-        "current_level": current_level.strip(),
-        "topics": cleaned_topics,
-        "daily_hours": daily_hours,
-        "duration_days": duration_days
-    }
+    "goal": goal.strip(),
+    "current_level": current_level.strip(),
+    "topics": cleaned_topics,
+    "daily_hours": daily_hours,
+    "duration_days": duration_days,
+    "plan_type": plan_type,
+    "exam_date": exam_date,
+}
 STUDY_PLAN_PROMPT = """
 You are an expert personalized study-plan generator.
 
@@ -65,11 +78,23 @@ Create a realistic and flexible study plan for a student based on the informatio
 Goal:
 {goal}
 
+Plan type:
+{plan_type}
+
 Current level:
 {current_level}
 
 Topics:
 {topics}
+
+Exam date:
+{exam_date}
+
+Available study time per study session:
+{daily_hours} hours
+
+Number of study sessions:
+{duration_days}
 
 Available study time per study session:
 {daily_hours} hours
@@ -97,6 +122,23 @@ IMPORTANT SCHEDULING RULES:
 17. Do not include reasoning, explanations, Markdown, or code fences.
 18. Start the response directly with {{ and end it with }}.
 
+IMPORTANT PLAN TYPE RULES:
+
+1. If plan type is "learning":
+   - Focus on building understanding from the student's current level.
+   - Progress from fundamentals to practice and revision.
+   - Do not add exam-specific tasks unless appropriate.
+
+2. If plan type is "exam_preparation":
+   - Prioritize the most important topics for the student's goal.
+   - Include focused learning, problem-solving, revision, and mock-test practice.
+   - Allocate more attention to difficult or important topics.
+   - Use the exam date to understand urgency and prioritize the sessions.
+   - The exam date must NOT create fixed calendar sessions.
+   - The student can complete the generated sessions whenever they have time.
+   - Include a final revision or mock-test session when appropriate.
+
+3. If exam date is "Not applicable", do not mention or use an exam date.
 Each study session should have:
 - A session number
 - One or more tasks
@@ -138,27 +180,33 @@ def generate_study_plan(
     current_level: str,
     topics: list[str],
     daily_hours: float,
-    duration_days: int
+    duration_days: int,
+    plan_type: str = "learning",
+    exam_date: str | None = None,
 ):
     """
     Generate a personalized study plan using Groq.
     """
 
     validated = validate_input(
-        goal=goal,
-        current_level=current_level,
-        topics=topics,
-        daily_hours=daily_hours,
-        duration_days=duration_days
+    goal=goal,
+    current_level=current_level,
+    topics=topics,
+    daily_hours=daily_hours,
+    duration_days=duration_days,
+    plan_type=plan_type,
+    exam_date=exam_date,
     )
 
     prompt = STUDY_PLAN_PROMPT.format(
-        goal=validated["goal"],
-        current_level=validated["current_level"],
-        topics=", ".join(validated["topics"]),
-        daily_hours=validated["daily_hours"],
-        duration_days=validated["duration_days"]
-    )
+    goal=validated["goal"],
+    current_level=validated["current_level"],
+    topics=", ".join(validated["topics"]),
+    daily_hours=validated["daily_hours"],
+    duration_days=validated["duration_days"],
+    plan_type=validated["plan_type"],
+    exam_date=validated["exam_date"] or "Not applicable",
+   )
 
     response = llm.invoke(prompt)
 
@@ -182,8 +230,24 @@ def generate_study_plan(
         ) from error
 
     # Initialize every generated study session as pending.
+    # Validate and initialize generated study sessions.
+    # Validate and initialize generated study sessions.
+    max_minutes = int(validated["daily_hours"] * 60)
+
     for session in plan.get("study_sessions", []):
         session["status"] = "pending"
+
+        total_minutes = sum(
+            task.get("duration_minutes", 0)
+            for task in session.get("tasks", [])
+        )
+
+        if total_minutes > max_minutes:
+            raise ValueError(
+                f"Study session {session.get('session')} exceeds "
+                f"the available study time of {max_minutes} minutes. "
+                f"Generated duration: {total_minutes} minutes."
+            )
 
     return plan
 def complete_session(plan: dict, session_number: int) -> dict:

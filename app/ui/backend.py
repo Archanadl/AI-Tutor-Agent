@@ -26,6 +26,13 @@ from app.rag.chunker import chunk_pages
 from app.rag.pdf_parser import parse_pdf
 from app.rag.vector_store import add_chunks
 from app.metrics import start_timer, elapsed_ms
+from app.study_plan.planner import (
+    generate_study_plan,
+    start_session,
+    complete_session,
+    get_next_pending_session,
+    get_study_plan_progress,
+)
 
 
 # ============================================================
@@ -304,3 +311,62 @@ def generate_quiz(
     except Exception as e:
         print(f"Error generating quiz: {e}")
         return []
+# ============================================================
+# PERSONALIZED STUDY PLAN
+# ============================================================
+
+def create_study_plan(
+    goal: str,
+    current_level: str,
+    topics: list[str],
+    daily_hours: float,
+    duration_days: int,
+    plan_type: str = "learning",
+    exam_date: str | None = None,
+) -> Dict[str, Any]:
+    """
+    Generate a personalized flexible study plan.
+    """
+
+    try:
+        return generate_study_plan(
+            goal=goal,
+            current_level=current_level,
+            topics=topics,
+            daily_hours=daily_hours,
+            duration_days=duration_days,
+            plan_type=plan_type,
+            exam_date=exam_date,
+        )
+
+    except Exception as exc:
+        return {
+            "error": str(exc),
+        }
+def begin_study_session(
+    plan: Dict[str, Any],
+    session_number: int,
+) -> Dict[str, Any]:
+    """
+    Mark a study session as in progress.
+    """
+    return start_session(plan, session_number)
+
+
+def finish_study_session(
+    plan: Dict[str, Any],
+    session_number: int,
+) -> Dict[str, Any]:
+    """
+    Mark a study session as completed.
+    """
+    return complete_session(plan, session_number)
+
+
+def get_study_plan_status(
+    plan: Dict[str, Any],
+) -> Dict[str, Any]:
+    """
+    Return the current study-plan progress.
+    """
+    return get_study_plan_progress(plan)

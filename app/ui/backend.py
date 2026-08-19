@@ -11,15 +11,15 @@ Retrieve → Grade → Generate
              ↓
         Web Search (MCP)
 """
-
 from __future__ import annotations
 
 import os
 import tempfile
+import json
 from typing import Any, Dict, List, Optional
 
-import json
-
+# Added spaced repetition import for the flashcard module
+from app.rag.spaced_repetition import calculate_sm2 
 from app.graph import tutor_graph, llm, extract_text
 from app.prompts.prompt_manager import PromptManager
 from app.rag.chunker import chunk_pages
@@ -71,13 +71,11 @@ def ingest_document(uploaded_file: Any) -> Dict[str, Any]:
             # ------------------------------------------------
             # 1. Parse PDF
             # ------------------------------------------------
-
             pages = parse_pdf(temp_path)
 
             # ------------------------------------------------
             # 2. Chunk PDF
             # ------------------------------------------------
-
             chunks = chunk_pages(
                 pages=pages,
                 document_id=file_name,
@@ -87,7 +85,6 @@ def ingest_document(uploaded_file: Any) -> Dict[str, Any]:
             # ------------------------------------------------
             # 3. Store in ChromaDB
             # ------------------------------------------------
-
             add_chunks(chunks)
 
             return {
@@ -201,8 +198,7 @@ def ask_tutor(
             source = document_id
 
         # ---------------------------------------------------------
-        # Calculate confidence (average across retrieved chunks,
-        # not just the single best-scoring chunk)
+        # Calculate confidence
         # ---------------------------------------------------------
         confidence = None
 
@@ -304,3 +300,83 @@ def generate_quiz(
     except Exception as e:
         print(f"Error generating quiz: {e}")
         return []
+
+
+# ============================================================
+# FLASHCARDS
+# ============================================================
+
+def get_flashcards(topic: str, count: int = 5) -> List[Dict[str, Any]]:
+    """
+    Generate flashcards for a specific topic using the LLM.
+    Expects the LLM to return a JSON array of front/back card objects.
+    """
+    # Note: Ensure you have a get_flashcard_prompt() in your PromptManager!
+    prompt_template = PromptManager.get_flashcard_prompt()
+    formatted_prompt = prompt_template.format(
+        topic=topic,
+        count=count
+    )
+
+    try:
+        response = llm.invoke(formatted_prompt)
+        response_text = extract_text(response).strip()
+        
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        elif response_text.startswith("```"):
+            response_text = response_text[3:]
+            
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+            
+        response_text = response_text.strip()
+        
+        flashcard_data = json.loads(response_text)
+        
+        if isinstance(flashcard_data, list):
+            return flashcard_data
+        return []
+    except Exception as e:
+        print(f"Error generating flashcards: {e}")
+        return []
+
+def submit_flashcard_answer(
+    quality: int, 
+    previous_interval: int = 0, 
+    previous_repetitions: int = 0, 
+    previous_ease_factor: float = 2.5
+) -> Dict[str, Any]:
+    """
+    Process a user's answer to a flashcard and calculate the next review 
+    interval using the SM-2 algorithm.
+    
+    Quality scale (0-5):
+    5: Perfect response
+    4: Correct response after a hesitation
+    3: Correct response recalled with serious difficulty
+    2: Incorrect response; where the correct one seemed easy to recall
+    1: Incorrect response; the correct one remembered
+    0: Complete blackout
+    """
+    try:
+        # Utilize the imported SM-2 function
+        new_interval, new_repetitions, new_ease_factor = calculate_sm2(
+            quality=quality,
+            interval=previous_interval,
+            repetitions=previous_repetitions,
+            ease_factor=previous_ease_factor
+        )
+        
+        return {
+            "status": "success",
+            "next_interval_days": new_interval,
+            "repetitions": new_repetitions,
+            "ease_factor": round(new_ease_factor, 2)
+        }
+    except Exception as e:
+        print(f"Error calculating SM-2: {e}")
+        return {
+            "status": "error",
+            "message": str(e)
+        }

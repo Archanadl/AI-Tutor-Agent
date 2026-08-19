@@ -9,6 +9,7 @@ NAV = [
     ("Home", "🏠 Home"),
     ("Chat", "💬 Chat"),
     ("Quiz", "📝 Settings"),
+    ("Flashcards", "📇 Flashcards"),
 ]
 
 

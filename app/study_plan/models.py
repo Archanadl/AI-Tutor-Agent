@@ -11,15 +11,16 @@ class StudyTask:
 
 
 @dataclass
-class StudyDay:
-    day: int
+class StudySession:
+    session: int
     tasks: List[StudyTask]
+    status: str = "pending"
 
 
 @dataclass
 class StudyPlan:
     goal: str
     current_level: str
-    duration_days: int
+    total_sessions: int
     daily_hours: float
-    days: List[StudyDay]
+    sessions: List[StudySession]

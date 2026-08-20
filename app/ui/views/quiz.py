@@ -4,6 +4,7 @@ import streamlit as st
 
 from backend import generate_quiz
 from components import hero, spacer, stat
+from app.progress import record_quiz_attempt
 
 
 def render():
@@ -188,12 +189,18 @@ def render():
                 )
                 if answer == item["answer"]
             )
-
+            record_quiz_attempt(
+                topic=topic,
+                difficulty=difficulty,
+                score=score,
+                total=len(items),
+                questions=items,
+            )
             st.session_state.quiz_score = (
                 score,
                 len(items),
             )
-
+            
             st.rerun()
 
     # ---------------------------------------------------------

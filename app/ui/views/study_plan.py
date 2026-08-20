@@ -12,6 +12,7 @@ from backend import (
     finish_study_session,
 )
 
+from app.progress import record_study_session
 
 def render():
     hero(
@@ -383,6 +384,14 @@ def render():
                             session_number,
                         )
 
+                        record_study_session(
+                           session_number=session_number,
+                           topics=[
+                               task.get("topic", "Study topic")
+                               for task in tasks
+                            ],
+                            duration_minutes=total_minutes,
+                        )
                         st.session_state[
                             "study_plan"
                         ] = plan

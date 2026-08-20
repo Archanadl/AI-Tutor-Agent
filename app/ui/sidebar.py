@@ -8,7 +8,11 @@ from app.ui.utils import create_new_chat, delete_chat, goto, sync_uploads
 NAV = [
     ("Home", "🏠 Home"),
     ("Chat", "💬 Chat"),
-    ("Quiz", "📝 Settings"),
+    ("Quiz", "📝 Quiz"),
+    ("Mind Map", "🗺️ Mind Map"),
+    ("Study Plan", "📅 Study Plan"),
+    ("Progress", "📈 Progress"),
+    ("Settings", "⚙️ Settings"),
 ]
 
 

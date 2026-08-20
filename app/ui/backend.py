@@ -24,6 +24,7 @@ from app.graph import tutor_graph, llm, extract_text
 from app.prompts.prompt_manager import PromptManager
 from app.rag.chunker import chunk_pages
 from app.rag.pdf_parser import parse_pdf
+from app.rag.retriever import retrieve
 from app.rag.vector_store import add_chunks
 from app.metrics import start_timer, elapsed_ms
 
@@ -304,3 +305,45 @@ def generate_quiz(
     except Exception as e:
         print(f"Error generating quiz: {e}")
         return []
+
+# ============================================================
+# MIND MAP
+# ============================================================
+
+def generate_mindmap(topic: str, document_id: Optional[str] = None) -> str:
+    """
+    Generate a mind map in Mermaid.js syntax using the LLM.
+    If a document_id is provided, retrieves context via RAG.
+    """
+    context_text = ""
+    if document_id:
+        try:
+            documents = retrieve(question=topic, document_id=document_id)
+            if documents:
+                context_text = "\n\n".join(doc.page_content for doc in documents)
+        except Exception as e:
+            print(f"Error retrieving context for mind map: {e}")
+
+    prompt_template = PromptManager.get_mindmap_prompt()
+    formatted_prompt = prompt_template.format(
+        topic=topic,
+        context=context_text
+    )
+
+    try:
+        response = llm.invoke(formatted_prompt)
+        response_text = extract_text(response).strip()
+        
+        # Clean up markdown formatting if the LLM wrapped it
+        if response_text.startswith("```mermaid"):
+            response_text = response_text[10:]
+        elif response_text.startswith("```"):
+            response_text = response_text[3:]
+            
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+            
+        return response_text.strip()
+    except Exception as e:
+        print(f"Error generating mind map: {e}")
+        return ""

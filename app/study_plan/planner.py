@@ -96,58 +96,163 @@ Available study time per study session:
 Number of study sessions:
 {duration_days}
 
-Available study time per study session:
-{daily_hours} hours
-
-Number of study sessions:
-{duration_days}
-
 IMPORTANT SCHEDULING RULES:
-1. The number of study sessions must be exactly {duration_days}.
-2. "Study session" does NOT mean a calendar day.
-3. The student can complete study sessions whenever they want.
+
+1. The number of study sessions MUST be exactly {duration_days}.
+2. A study session does NOT mean a calendar day.
+3. The student can complete sessions whenever they want.
 4. The student does NOT have to study on consecutive calendar days.
-5. Never assign calendar dates such as Monday, Tuesday, or specific dates.
+5. Never assign calendar dates, weekdays, or specific dates to sessions.
 6. If the student skips a calendar day, no study session is lost.
-7. The plan represents learning sessions, not a fixed calendar schedule.
-8. Each study session should fit within the available study time.
-9. Distribute the provided topics in a logical learning order.
-10. Start from the student's current level.
-11. Keep each study session concise and realistic.
-12. Prefer 2 or 3 tasks per study session.
-13. Include learning, practice, and revision where appropriate.
-14. Make the plan practical and achievable.
-15. Do not introduce completely unrelated topics.
-16. Return ONLY valid JSON.
-17. Do not include reasoning, explanations, Markdown, or code fences.
-18. Start the response directly with {{ and end it with }}.
+7. The plan represents independent learning sessions, not a fixed calendar schedule.
+8. Every study session MUST fit within the available study time.
+9. The total duration of ALL tasks in one session MUST NOT exceed
+   {daily_hours} × 60 minutes.
+10. Distribute the provided topics in a logical learning order.
+11. Start from the student's current level.
+12. Keep each study session concise and realistic.
+13. Prefer 2 or 3 tasks per study session, but use fewer tasks when necessary
+    to stay within the time limit.
+14. Include learning, practice, and revision where appropriate.
+15. Make the plan practical and achievable.
+16. Do not introduce completely unrelated topics.
+17. Return ONLY valid JSON.
+18. Do not include reasoning, explanations, Markdown, or code fences.
+19. Start the response directly with {{ and end it with }}.
+
 
 IMPORTANT PLAN TYPE RULES:
 
-1. If plan type is "learning":
-   - Focus on building understanding from the student's current level.
-   - Progress from fundamentals to practice and revision.
-   - Do not add exam-specific tasks unless appropriate.
+If plan type is "learning":
 
-2. If plan type is "exam_preparation":
-   - Prioritize the most important topics for the student's goal.
-   - Include focused learning, problem-solving, revision, and mock-test practice.
-   - Allocate more attention to difficult or important topics.
-   - Use the exam date to understand urgency and prioritize the sessions.
-   - The exam date must NOT create fixed calendar sessions.
-   - The student can complete the generated sessions whenever they have time.
-   - Include a final revision or mock-test session when appropriate.
+- Focus on building understanding from the student's current level.
+- Progress from fundamentals to practice and revision.
+- Give reasonable coverage to the provided topics.
+- Do not prioritize topics based on an exam deadline.
+- Balance learning, practice, and revision across the sessions.
 
-3. If exam date is "Not applicable", do not mention or use an exam date.
+
+If plan type is "exam_preparation":
+
+- The student has a specific exam and limited preparation time.
+- Use the exam date to determine urgency.
+- Prioritize the most important, fundamental, high-value, or difficult topics.
+- Do NOT give equal time to every topic when preparation time is limited.
+- If there are more topics than can realistically be covered, prioritize
+  the most important topics and reduce or omit lower-priority topics.
+- Focus on exam-relevant understanding and problem-solving rather than
+  lengthy explanations.
+- Include practice problems for important topics.
+- Include revision of previously learned material.
+- Include a final revision or mock-test session when the number of sessions
+  allows it.
+- As the exam becomes closer, increase emphasis on practice, revision,
+  and weak areas rather than introducing many new topics.
+- The exam date is used only to determine urgency and priority.
+- NEVER assign sessions to specific calendar dates.
+- The student can complete the generated sessions whenever they have time.
+
+
+If exam date is "Not applicable":
+
+- Do not mention or use an exam date.
+
+
+IMPORTANT HARD TIME CONSTRAINT:
+
+This is a STRICT mathematical constraint, NOT a recommendation.
+
+The maximum duration for EVERY study session is:
+
+{daily_hours} × 60 minutes.
+
+For example:
+
+- If daily_hours = 1 → maximum 60 minutes
+- If daily_hours = 2 → maximum 120 minutes
+- If daily_hours = 3 → maximum 180 minutes
+- If daily_hours = 4 → maximum 240 minutes
+
+The duration of a session means the SUM of duration_minutes
+of ALL tasks inside that session.
+
+For example, when daily_hours = 3:
+
+60 + 60 + 60 = 180 → VALID
+
+90 + 60 + 30 = 180 → VALID
+
+60 + 90 + 60 = 210 → INVALID
+
+90 + 90 + 90 = 270 → INVALID
+
+
+BEFORE RETURNING THE JSON:
+
+Calculate the total duration of EVERY session individually.
+
+If a session exceeds the maximum:
+
+- Reduce task durations.
+- Remove a lower-priority task if necessary.
+- Combine related tasks if appropriate.
+- Redistribute content across other sessions if appropriate.
+- NEVER return a session above the maximum.
+
+The final JSON MUST NOT contain any session whose total duration
+exceeds {daily_hours} × 60 minutes.
+
+
+IMPORTANT:
+
+Do NOT assume that having 2 or 3 tasks means each task can use
+a large amount of time.
+
+For example, with daily_hours = 3:
+
+Three tasks of 60 minutes = 180 minutes → VALID.
+
+Three tasks of 90 minutes = 270 minutes → INVALID.
+
+
+LIMITED-TIME EXAM PREPARATION:
+
+For exam_preparation:
+
+- Limited time means PRIORITIZE, not overload.
+- Do not try to fit every topic into every session.
+- Prefer fewer high-value tasks over many tasks.
+- Prioritize fundamentals and frequently useful concepts.
+- Allocate sufficient time for problem-solving.
+- Reserve time for revision and mock testing when possible.
+
+
+FINAL VALIDATION CHECK:
+
+Before returning the JSON, verify ALL of the following:
+
+1. Exactly {duration_days} study sessions exist.
+2. Every session contains at least one task.
+3. Every task has a topic.
+4. Every task has a description.
+5. Every task has a positive duration_minutes value.
+6. Every session's total duration is <= {daily_hours} × 60 minutes.
+7. No session exceeds the available study time.
+8. No calendar dates are assigned.
+9. Only the provided topics are used, unless combining them into a
+   clearly related mixed-topic revision task.
+10. Exam preparation prioritizes important topics when time is limited.
+11. The response contains ONLY valid JSON.
+
+
 Each study session should have:
+
 - A session number
 - One or more tasks
 - A topic for each task
 - A description
 - Duration in minutes
 
-The total duration of the tasks in each session must NOT exceed
-{daily_hours} hours.
 
 Return exactly this structure:
 

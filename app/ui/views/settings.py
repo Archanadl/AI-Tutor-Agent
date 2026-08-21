@@ -2,8 +2,8 @@
 
 import streamlit as st
 
-from components import hero, spacer
-from styles import THEMES
+from app.ui.components import hero, spacer
+from app.ui.styles import THEMES
 
 AVATAR_OPTIONS_USER = ["🧑‍🎓", "🧑‍💻", "👩‍🎓", "👨‍🎓", "🦉", "🐱", "🤓", "🧑"]
 AVATAR_OPTIONS_TUTOR = ["🎓", "🤖", "🧠", "📚", "✨", "🦾", "🦊", "🐣"]

@@ -2,7 +2,7 @@
 
 import streamlit as st
 
-from components import hero, spacer, stat
+from app.ui.components import hero, spacer, stat
 
 from app.progress import (
     get_progress_summary,

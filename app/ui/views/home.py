@@ -2,8 +2,8 @@
 
 import streamlit as st
 
-from components import card, hero, spacer, stat
-from utils import create_new_chat, goto
+from app.ui.components import card, hero, spacer, stat
+from app.ui.utils import create_new_chat, goto
 
 
 def render():

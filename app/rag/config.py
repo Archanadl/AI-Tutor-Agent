@@ -8,6 +8,7 @@ class Settings(BaseSettings):
 
     retrieval_k: int = 4
     min_relevance_score: float = 0.5
+    max_retrieval_distance: float = 2.0
     google_api_key: str = ""
     gemini_model: str = "gemini-3.6-flash"
     

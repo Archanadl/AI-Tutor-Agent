@@ -4,8 +4,8 @@ import time
 
 import streamlit as st
 
-from backend import ask_tutor
-from components import (
+from app.ui.backend import ask_tutor
+from app.ui.components import (
     confidence_meter,
     hero,
     skeleton,
@@ -14,7 +14,12 @@ from components import (
     trace_strip,
     typing_indicator,
 )
-from utils import create_new_chat, generate_chat_title, get_current_chat, primary_document
+from app.ui.utils import (
+    create_new_chat,
+    generate_chat_title,
+    get_current_chat,
+    primary_document,
+)
 
 SUGGESTIONS = [
     "Explain the TCP three-way handshake",

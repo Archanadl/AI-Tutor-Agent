@@ -64,14 +64,11 @@ def similarity_search(
     k: int | None = None,
 ) -> list[tuple[Document, float]]:
     """
-    Search ChromaDB for documents relevant to the query.
-
-    If document_id is provided, retrieval is restricted to that document.
+    Search ChromaDB using L2 distance.
 
     Returns:
-        List of (Document, relevance_score) tuples.
-        Scores are normalized between 0 and 1,
-        where higher means more relevant.
+        List of (Document, distance) tuples.
+        Lower distance means higher similarity.
     """
     if not query.strip():
         raise ValueError("Query cannot be empty.")
@@ -84,7 +81,7 @@ def similarity_search(
         else None
     )
 
-    return vectorstore.similarity_search_with_relevance_scores(
+    return vectorstore.similarity_search_with_score(
         query,
         k=k if k is not None else settings.retrieval_k,
         filter=filter_dict,

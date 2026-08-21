@@ -4,9 +4,9 @@ from datetime import date, timedelta
 
 import streamlit as st
 
-from components import hero, spacer
+from app.ui.components import hero, spacer
 
-from backend import (
+from app.ui.backend import (
     create_study_plan,
     begin_study_session,
     finish_study_session,

@@ -32,9 +32,11 @@ def retrieve(
 
     documents = []
 
-    for document, score in results:
-        if score >= settings.min_relevance_score:
-            document.metadata["relevance_score"] = score
+    for document, distance in results:
+        relevance_score = 1 / (1 + distance)
+
+        if distance <= settings.max_retrieval_distance:
+            document.metadata["relevance_score"] = relevance_score
             documents.append(document)
 
     return documents

@@ -26,6 +26,7 @@ from app.rag.chunker import chunk_pages
 from app.rag.pdf_parser import parse_pdf
 from app.rag.vector_store import add_chunks
 from app.metrics import start_timer, elapsed_ms
+from app.rag.spaced_repetition import calculate_sm2
 from app.study_plan.planner import (
     generate_study_plan,
     start_session,
@@ -311,6 +312,74 @@ def generate_quiz(
     except Exception as e:
         print(f"Error generating quiz: {e}")
         return []
+
+
+
+def get_flashcards(
+    topic: str,
+    count: int = 5,
+) -> List[Dict[str, Any]]:
+    """Generate flashcards using the project's existing LLM."""
+
+    prompt_template = PromptManager.get_flashcard_prompt()
+
+    formatted_prompt = prompt_template.format(
+        topic=topic,
+        count=count,
+    )
+
+    try:
+        response = llm.invoke(formatted_prompt)
+        response_text = extract_text(response).strip()
+
+        if response_text.startswith("```json"):
+            response_text = response_text[7:]
+        elif response_text.startswith("```"):
+            response_text = response_text[3:]
+
+        if response_text.endswith("```"):
+            response_text = response_text[:-3]
+
+        cards = json.loads(response_text.strip())
+
+        if not isinstance(cards, list):
+            return []
+
+        return cards[:count]
+
+    except Exception as exc:
+        print(f"Error generating flashcards: {exc}")
+        return []
+
+
+def submit_flashcard_answer(
+    quality: int,
+    previous_interval: int = 0,
+    previous_repetitions: int = 0,
+    previous_ease_factor: float = 2.5,
+) -> Dict[str, Any]:
+    """Calculate the next flashcard review interval using SM-2."""
+
+    try:
+        interval, repetitions, ease_factor = calculate_sm2(
+            quality=quality,
+            interval=previous_interval,
+            repetitions=previous_repetitions,
+            ease_factor=previous_ease_factor,
+        )
+
+        return {
+            "status": "success",
+            "next_interval_days": interval,
+            "repetitions": repetitions,
+            "ease_factor": round(ease_factor, 2),
+        }
+
+    except Exception as exc:
+        return {
+            "status": "error",
+            "error": str(exc),
+        }
 # ============================================================
 # PERSONALIZED STUDY PLAN
 # ============================================================

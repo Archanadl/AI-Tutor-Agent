@@ -2,8 +2,8 @@
 
 import streamlit as st
 
-from backend import generate_quiz
-from components import hero, spacer, stat
+from app.ui.backend import generate_quiz
+from app.ui.components import hero, spacer, stat
 from app.progress import record_quiz_attempt
 
 

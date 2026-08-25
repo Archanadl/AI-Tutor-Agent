@@ -13,7 +13,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.6-flash"
     
     groq_api_key: str = ""
-    groq_model: str = "openai/gpt-oss-20b"
+    groq_model: str = "qwen/qwen3.6-27b"
     
     llm_temperature: float = 0.0
 

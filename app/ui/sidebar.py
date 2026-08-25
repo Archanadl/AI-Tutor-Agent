@@ -10,8 +10,10 @@ NAV = [
     ("Chat", "💬 Chat"),
     ("Quiz", "📝 Quiz"),
     ("Flashcards", "📇 Flashcards"),
+    ("Mind Map", "🗺️ Mind Map"),
     ("Study Plan", "📅 Study Plan"),
-    ("Progress", "📊 Progress"),
+    ("Progress", "📈 Progress"),
+    ("Settings", "⚙️ Settings"),
 ]
 
 

@@ -2,6 +2,7 @@ from app.prompts.grader_prompt import GRADER_PROMPT
 from app.prompts.generator_prompt import GENERATOR_PROMPT
 from app.prompts.quiz_prompt import QUIZ_PROMPT
 from app.prompts.flashcard_prompt import FLASHCARD_PROMPT
+from app.prompts.mindmap_prompt import MINDMAP_PROMPT
 
 class PromptManager:
     """
@@ -23,3 +24,7 @@ class PromptManager:
     @staticmethod
     def get_flashcard_prompt():
         return FLASHCARD_PROMPT
+
+    @staticmethod
+    def get_mindmap_prompt():
+        return MINDMAP_PROMPT

@@ -12,7 +12,7 @@ class Settings(BaseSettings):
     gemini_model: str = "gemini-3.6-flash"
     
     groq_api_key: str = ""
-    groq_model: str = "llama3-8b-8192"
+    groq_model: str = "qwen/qwen3.6-27b"
     
     llm_temperature: float = 0.0
 

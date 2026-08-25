@@ -285,6 +285,10 @@ def generate_quiz(
         response = llm.invoke(formatted_prompt)
         response_text = extract_text(response).strip()
         
+        # Strip out <think> tags that reasoning models like Qwen might output
+        if "</think>" in response_text:
+            response_text = response_text.split("</think>")[-1].strip()
+            
         # Clean up markdown formatting if the LLM wrapped it in ```json ... ```
         if response_text.startswith("```json"):
             response_text = response_text[7:]
@@ -334,6 +338,10 @@ def generate_mindmap(topic: str, document_id: Optional[str] = None) -> str:
         response = llm.invoke(formatted_prompt)
         response_text = extract_text(response).strip()
         
+        # Strip out <think> tags that reasoning models like Qwen might output
+        if "</think>" in response_text:
+            response_text = response_text.split("</think>")[-1].strip()
+            
         # Clean up markdown formatting if the LLM wrapped it
         if response_text.startswith("```mermaid"):
             response_text = response_text[10:]

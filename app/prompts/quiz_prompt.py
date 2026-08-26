@@ -3,29 +3,30 @@ from langchain_core.prompts import PromptTemplate
 QUIZ_PROMPT = PromptTemplate(
     input_variables=["topic", "difficulty", "count"],
     template="""
-You are an expert educational assessor for an AI Tutor.
-Your task is to generate a multiple-choice quiz on the following topic:
+Generate exactly {count} multiple-choice questions about:
 
 Topic: {topic}
 Difficulty: {difficulty}
-Number of questions: {count}
 
-Instructions:
-1. Generate exactly {count} multiple-choice questions.
-2. The questions should match the requested {difficulty} level.
-3. Each question must have exactly 4 options.
-4. Provide the correct answer and a brief explanation ("why") for the correct answer.
-5. Return ONLY a valid JSON array of objects. Do not include any markdown formatting, code blocks, or conversational text.
+Return ONLY a valid JSON array. Do NOT include reasoning, <think> tags,
+markdown, code fences, explanations outside the JSON, or any other text.
 
-The JSON array must strictly follow this structure:
+Each question must contain:
+- "q": question
+- "options": exactly 4 options
+- "answer": the correct option
+- "why": a short explanation
+
+Keep each question and explanation concise.
+
+Required format:
 [
   {{
-    "q": "Question text here?",
-    "options": ["Option A", "Option B", "Option C", "Option D"],
-    "answer": "Option B",
-    "why": "Brief explanation of why Option B is correct."
-  }},
-  ...
+    "q": "Question?",
+    "options": ["A", "B", "C", "D"],
+    "answer": "A",
+    "why": "Short explanation."
+  }}
 ]
 """
 )

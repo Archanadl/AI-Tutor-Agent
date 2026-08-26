@@ -20,6 +20,8 @@ from typing import Any, Dict, List, Optional
 
 import json
 
+from langchain_groq import ChatGroq
+from app.rag.config import settings
 from app.graph import tutor_graph, llm, extract_text
 from app.prompts.prompt_manager import PromptManager
 from app.rag.chunker import chunk_pages
@@ -290,7 +292,14 @@ def generate_quiz(
     )
 
     try:
-        response = llm.invoke(formatted_prompt)
+        quiz_llm = ChatGroq(
+            model=settings.groq_model,
+            temperature=0,
+            api_key=settings.groq_api_key,
+            max_tokens=4000,
+        )
+
+        response = quiz_llm.invoke(formatted_prompt)
         response_text = extract_text(response).strip()
         
         # Strip out <think> tags that reasoning models like Qwen might output
@@ -307,7 +316,6 @@ def generate_quiz(
             response_text = response_text[:-3]
             
         response_text = response_text.strip()
-        
         quiz_data = json.loads(response_text)
         
         if isinstance(quiz_data, list):

@@ -341,9 +341,21 @@ def get_flashcards(
     )
 
     try:
-        response = llm.invoke(formatted_prompt)
+        flashcard_llm = ChatGroq(
+            model=settings.groq_model,
+            temperature=0,
+            api_key=settings.groq_api_key,
+            max_tokens=2000,
+        )
+
+        response = flashcard_llm.invoke(formatted_prompt)
         response_text = extract_text(response).strip()
 
+        # Remove Qwen reasoning
+        if "</think>" in response_text:
+            response_text = response_text.split("</think>", 1)[1].strip()
+
+        # Remove markdown code fences
         if response_text.startswith("```json"):
             response_text = response_text[7:]
         elif response_text.startswith("```"):

@@ -16,6 +16,7 @@ from __future__ import annotations
 
 import os
 import tempfile
+import re
 from typing import Any, Dict, List, Optional
 
 import json
@@ -482,11 +483,21 @@ def generate_mindmap(topic: str, document_id: Optional[str] = None) -> str:
         response = llm.invoke(formatted_prompt)
         response_text = extract_text(response).strip()
         
-        # Strip out <think> tags that reasoning models like Qwen might output
-        if "</think>" in response_text:
-            response_text = response_text.split("</think>")[-1].strip()
+        # 1. Try to extract from markdown code blocks
+        mermaid_match = re.search(r'```(?:mermaid)?\n(.*?)\n```', response_text, re.DOTALL | re.IGNORECASE)
+        if mermaid_match:
+            response_text = mermaid_match.group(1)
+        else:
+            # 2. Try to strip <think>...</think> tags
+            response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
             
-        # Clean up markdown formatting if the LLM wrapped it
+            # 3. If there is still a <think> tag (e.g. unclosed), just find 'mindmap'
+            idx = response_text.find("mindmap")
+            if idx != -1:
+                response_text = response_text[idx:]
+            
+        # 4. Fallback cleanup
+        response_text = response_text.strip()
         if response_text.startswith("```mermaid"):
             response_text = response_text[10:]
         elif response_text.startswith("```"):

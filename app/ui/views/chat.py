@@ -7,12 +7,12 @@ import streamlit as st
 from app.ui.backend import ask_tutor
 from app.ui.components import (
     confidence_meter,
-    hero,
     skeleton,
     source_badges,
     spacer,
     trace_strip,
     typing_indicator,
+    welcome_banner,
 )
 from app.ui.utils import (
     create_new_chat,
@@ -43,30 +43,54 @@ def render():
 
     chat = get_current_chat()
     if chat is None:
-        hero(
-            eyebrow="Conversation",
-            title="No chat open —",
-            highlight="start a new one.",
-            subtitle="Each conversation keeps its own memory and title.",
-        )
+        # Show the welcome banner instead of routing to Home
+        welcome_banner()
+
+        spacer(12)
+
+        # Quick action cards
+        cols = st.columns(3)
+        steps = [
+            ("📚", "1 · Upload", "Your PDFs are parsed, chunked and embedded into a vector store."),
+            ("🧠", "2 · Ask", "Retrieval runs, a grader agent checks relevance, web search backs it up."),
+            ("🎯", "3 · Verify", "Answers arrive with a source badge and a confidence score."),
+        ]
+        for col, step in zip(cols, steps):
+            with col:
+                st.markdown(
+                    f"""
+                    <div class="card">
+                      <div class="ico">{step[0]}</div>
+                      <p class="t">{step[1]}</p>
+                      <p class="s">{step[2]}</p>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
+
         spacer(20)
-        if st.button("➕ New chat", type="primary", key="empty_new"):
+        if st.button("➕ Start a new chat", type="primary", key="empty_new"):
             create_new_chat()
             st.rerun()
         return
 
     document = primary_document()
     title = "Chat with your study material" if chat["title"] == "New Chat" else chat["title"]
-    hero(
-        eyebrow=f"Session · {chat['created_at']}",
-        title="💬",
-        highlight=title,
-        subtitle=(
-            f"Grounded in **{document}**" if document
-            else "No document loaded — the tutor will fall back to web search."
-        ),
+
+    # Compact header for active chats
+    st.markdown(
+        f"""
+        <div style="margin-bottom:16px;">
+          <h3 style="margin:0;">💬 {title}</h3>
+          <p style="color:var(--muted);font-size:.85rem;margin:4px 0 0;">
+            {"Grounded in <b>" + document + "</b>" if document
+             else "No document loaded — web search fallback active."}
+            · {chat['created_at']}
+          </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
     )
-    spacer(20)
 
     for message in chat["messages"]:
         avatar = user_avatar if message["role"] == "user" else tutor_avatar

@@ -1,10 +1,10 @@
-"""Study plan view — personalized learning and exam preparation plans."""
+"""Study plan & progress view — unified dashboard with timeline and metrics."""
 
 from datetime import date, timedelta
 
 import streamlit as st
 
-from app.ui.components import hero, spacer
+from app.ui.components import hero, metric_card, spacer, timeline_item
 
 from app.ui.backend import (
     create_study_plan,
@@ -12,24 +12,48 @@ from app.ui.backend import (
     finish_study_session,
 )
 
-from app.progress import record_study_session
+from app.progress import (
+    record_study_session,
+    get_progress_summary,
+    get_topic_mastery,
+    get_weak_topics,
+    get_study_streak,
+    get_recommendations,
+)
+
 
 def render():
     hero(
-        eyebrow="Planner agent",
-        title="A study plan shaped around your",
-        highlight="goal and available time.",
+        eyebrow="Plan & track",
+        title="Your personalized study",
+        highlight="dashboard.",
         subtitle=(
-            "Create a flexible study plan that you can complete "
-            "consecutively or whenever you have time."
+            "Create study plans, track your progress, and identify "
+            "weak areas — all in one place."
         ),
     )
 
-    spacer(24)
+    spacer(20)
 
     # =========================================================
-    # CREATE STUDY PLAN
+    # SUB-TABS: Study Plan / Progress
     # =========================================================
+
+    plan_tab, progress_tab = st.tabs(["📅 Study Plan", "📈 Progress"])
+
+    with plan_tab:
+        _render_study_plan()
+
+    with progress_tab:
+        _render_progress()
+
+
+# ============================================================
+# STUDY PLAN
+# ============================================================
+
+def _render_study_plan():
+    spacer(12)
 
     st.subheader("🎯 Create your personalized study plan")
 
@@ -73,9 +97,7 @@ def render():
             step=1,
         )
 
-    # Exam date is required only for exam preparation
     exam_date = None
-
     if plan_type == "Exam Preparation":
         exam_date = st.date_input(
             "📅 Exam date",
@@ -84,8 +106,7 @@ def render():
 
     st.caption(
         "Your plan contains study sessions, not fixed calendar days. "
-        "You can complete sessions consecutively or whenever you have time. "
-        "Skipping a day does not remove a session."
+        "You can complete sessions consecutively or whenever you have time."
     )
 
     generate_plan = st.button(
@@ -93,20 +114,12 @@ def render():
         type="primary",
     )
 
-    # =========================================================
-    # GENERATE PLAN
-    # =========================================================
-
     if generate_plan:
-
         if not goal.strip():
             st.error("Please enter your study goal.")
-
         elif not topics_text.strip():
             st.error("Please enter at least one topic.")
-
         else:
-
             topics = [
                 topic.strip()
                 for topic in topics_text.split(",")
@@ -114,7 +127,6 @@ def render():
             ]
 
             try:
-
                 plan = create_study_plan(
                     goal=goal,
                     current_level=current_level,
@@ -133,292 +145,200 @@ def render():
                     ),
                 )
 
-                # ---------------------------------------------
-                # Check backend error
-                # ---------------------------------------------
-
                 if "error" in plan:
-
                     st.error(
-                        f"Could not generate study plan: "
-                        f"{plan['error']}"
+                        f"Could not generate study plan: {plan['error']}"
                     )
-
-                # ---------------------------------------------
-                # Validate generated sessions
-                # ---------------------------------------------
-
                 elif not plan.get("study_sessions"):
-
-                    st.error(
-                        "The planner returned no study sessions."
-                    )
-
+                    st.error("The planner returned no study sessions.")
                 else:
-
-                    # Store valid plan
                     st.session_state["study_plan"] = plan
-
-                    st.success(
-                        "✅ Personalized study plan generated successfully!"
-                    )
+                    st.success("✅ Personalized study plan generated successfully!")
 
             except Exception as exc:
-
-                st.error(
-                    f"Could not generate study plan: {exc}"
-                )
+                st.error(f"Could not generate study plan: {exc}")
 
     # =========================================================
     # DISPLAY GENERATED STUDY PLAN
     # =========================================================
 
     plan = st.session_state.get("study_plan")
-
     if not plan:
         return
 
-    spacer(28)
-
-    st.subheader("📖 Your Study Plan")
-
-    sessions = plan.get(
-        "study_sessions",
-        [],
-    )
-
+    sessions = plan.get("study_sessions", [])
     if not sessions:
-
-        st.warning(
-            "No study sessions were generated."
-        )
-
+        st.warning("No study sessions were generated.")
         return
 
-    # =========================================================
-    # PROGRESS SUMMARY
-    # =========================================================
+    spacer(28)
+    st.subheader("📖 Your Study Plan")
 
+    # Progress summary cards
     completed_count = sum(
-        1
-        for session in sessions
+        1 for session in sessions
         if session.get("status") == "completed"
     )
-
-    in_progress = [
-        session
-        for session in sessions
-        if session.get("status") == "in_progress"
-    ]
-
     remaining_count = len(sessions) - completed_count
-
     progress = completed_count / len(sessions)
 
     col1, col2, col3 = st.columns(3)
-
     with col1:
-        st.metric(
-            "Total Sessions",
-            len(sessions),
-        )
-
+        metric_card("📚", "Total Sessions", str(len(sessions)), "Study sessions planned")
     with col2:
-        st.metric(
-            "Completed",
-            completed_count,
-        )
-
+        metric_card("✅", "Completed", str(completed_count), f"{round(progress * 100)}% done")
     with col3:
-        st.metric(
-            "Remaining",
-            remaining_count,
-        )
+        metric_card("📋", "Remaining", str(remaining_count), "Sessions left")
 
-    st.progress(
-        progress,
-        text=(
-            f"{completed_count} of "
-            f"{len(sessions)} sessions completed"
-        ),
-    )
+    spacer(12)
+    st.progress(progress, text=f"{completed_count} of {len(sessions)} sessions completed")
 
     spacer(20)
 
     # =========================================================
-    # STUDY SESSIONS
+    # TIMELINE VIEW
     # =========================================================
+
+    st.markdown('<div class="timeline">', unsafe_allow_html=True)
 
     for session in sessions:
-
-        session_number = session.get(
-            "session"
-        )
-
-        status = session.get(
-            "status",
-            "pending",
-        )
-
-        tasks = session.get(
-            "tasks",
-            [],
-        )
-
+        session_number = session.get("session")
+        status = session.get("status", "pending")
+        tasks = session.get("tasks", [])
         total_minutes = sum(
-            task.get(
-                "duration_minutes",
-                0,
-            )
-            for task in tasks
+            task.get("duration_minutes", 0) for task in tasks
         )
 
-        # -----------------------------------------------------
-        # Status
-        # -----------------------------------------------------
+        # Render the timeline card (HTML)
+        timeline_item(
+            number=session_number,
+            status=status,
+            tasks=tasks,
+            total_minutes=total_minutes,
+        )
 
-        if status == "completed":
-
-            status_icon = "✅"
-            status_text = "Completed"
+        # Action buttons (Streamlit native, placed after the HTML card)
+        if status == "pending":
+            if st.button(
+                f"▶️ Start Session {session_number}",
+                key=f"start_session_{session_number}",
+            ):
+                try:
+                    begin_study_session(plan, session_number)
+                    st.session_state["study_plan"] = plan
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"Could not start session: {exc}")
 
         elif status == "in_progress":
+            if st.button(
+                f"✅ Complete Session {session_number}",
+                key=f"complete_session_{session_number}",
+                type="primary",
+            ):
+                try:
+                    finish_study_session(plan, session_number)
+                    record_study_session(
+                        session_number=session_number,
+                        topics=[
+                            task.get("topic", "Study topic")
+                            for task in tasks
+                        ],
+                        duration_minutes=total_minutes,
+                    )
+                    st.session_state["study_plan"] = plan
+                    st.rerun()
+                except Exception as exc:
+                    st.error(f"Could not complete session: {exc}")
 
-            status_icon = "🟡"
-            status_text = "In progress"
+    st.markdown('</div>', unsafe_allow_html=True)
 
-        else:
+    # All completed banner
+    if completed_count == len(sessions):
+        spacer(12)
+        st.markdown(
+            """
+            <div class="welcome-banner" style="padding:28px;">
+              <div class="wb-emoji">🎉</div>
+              <h2>Congratulations!</h2>
+              <p class="wb-sub">You have completed your entire study plan.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
 
-            status_icon = "⬜"
-            status_text = "Pending"
 
-        # -----------------------------------------------------
-        # Session
-        # -----------------------------------------------------
+# ============================================================
+# PROGRESS TRACKER
+# ============================================================
 
-        with st.container(border=True):
+def _render_progress():
+    spacer(12)
+
+    progress_summary = get_progress_summary()
+    topic_mastery = get_topic_mastery()
+    weak_topics = get_weak_topics()
+    study_streak = get_study_streak()
+    recommendations = get_recommendations()
+
+    # Dashboard metric cards
+    cols = st.columns(4)
+    metrics = [
+        ("📚", "Topics Studied", str(progress_summary.get("topics_studied", 0)), "From your learning activity"),
+        ("📝", "Quizzes Taken", str(progress_summary.get("quizzes_taken", 0)), "Completed attempts"),
+        ("🎯", "Average Score", f"{progress_summary.get('average_score', 0)}%", "Across completed quizzes"),
+        ("🔥", "Study Streak", f"{study_streak} days", "Keep going!"),
+    ]
+
+    for col, m in zip(cols, metrics):
+        with col:
+            metric_card(m[0], m[1], m[2], m[3])
+
+    spacer(30)
+
+    # Topic mastery
+    st.subheader("📚 Topic Mastery")
+
+    if topic_mastery:
+        for topic_name, data in topic_mastery.items():
+            score = data.get("mastery", 0)
+            level = data.get("level", "Weak")
 
             st.markdown(
-                f"### {status_icon} Session {session_number}"
+                f"<div style='display:flex;justify-content:space-between;margin-bottom:4px;'>"
+                f"<b>{topic_name}</b>"
+                f"<span style='color:var(--muted)'>{level} · {score}%</span>"
+                f"</div>",
+                unsafe_allow_html=True,
             )
+            st.progress(score / 100)
+            spacer(6)
+    else:
+        st.info("📚 Topic mastery will appear after you complete quizzes.")
 
-            st.caption(
-                f"{status_text} · "
-                f"{total_minutes} minutes"
-            )
+    spacer(20)
 
-            # -------------------------------------------------
-            # Tasks
-            # -------------------------------------------------
+    # Weak topics
+    st.subheader("🧠 Weak Topics")
 
-            for task in tasks:
+    if weak_topics:
+        cols = st.columns(min(len(weak_topics), 3))
+        for i, item in enumerate(weak_topics):
+            with cols[i % len(cols)]:
+                st.warning(f"📌 {item['topic']} — {item['mastery']}%")
+    else:
+        st.success("🎉 No weak topics detected yet. Keep practicing!")
 
-                topic = task.get(
-                    "topic",
-                    "Study topic",
-                )
+    spacer(20)
 
-                description = task.get(
-                    "description",
-                    "",
-                )
+    # Recommendations
+    st.subheader("🔄 Revision Recommendations")
 
-                duration = task.get(
-                    "duration_minutes",
-                    0,
-                )
-
-                st.markdown(
-                    f"**{topic}** — {duration} min"
-                )
-
-                if description:
-
-                    st.caption(
-                        description
-                    )
-
-            spacer(8)
-
-            # -------------------------------------------------
-            # Session actions
-            # -------------------------------------------------
-
-            if status == "pending":
-
-                if st.button(
-                    f"▶️ Start Session {session_number}",
-                    key=f"start_session_{session_number}",
-                ):
-
-                    try:
-
-                        begin_study_session(
-                            plan,
-                            session_number,
-                        )
-
-                        st.session_state[
-                            "study_plan"
-                        ] = plan
-
-                        st.rerun()
-
-                    except Exception as exc:
-
-                        st.error(
-                            f"Could not start session: {exc}"
-                        )
-
-            elif status == "in_progress":
-
-                if st.button(
-                    f"✅ Complete Session {session_number}",
-                    key=f"complete_session_{session_number}",
-                ):
-
-                    try:
-
-                        finish_study_session(
-                            plan,
-                            session_number,
-                        )
-
-                        record_study_session(
-                           session_number=session_number,
-                           topics=[
-                               task.get("topic", "Study topic")
-                               for task in tasks
-                            ],
-                            duration_minutes=total_minutes,
-                        )
-                        st.session_state[
-                            "study_plan"
-                        ] = plan
-
-                        st.rerun()
-
-                    except Exception as exc:
-
-                        st.error(
-                            f"Could not complete session: {exc}"
-                        )
-
-            else:
-
-                st.caption(
-                    "This session is completed."
-                )
-
-        spacer(12)
-
-    # =========================================================
-    # ALL SESSIONS COMPLETED
-    # =========================================================
-
-    if completed_count == len(sessions):
-
+    if recommendations:
+        for recommendation in recommendations:
+            st.info(f"💡 {recommendation['message']}")
+    else:
         st.success(
-            "🎉 Congratulations! "
-            "You have completed your entire study plan."
+            "🎯 Keep practicing! Recommendations will appear as you "
+            "complete quizzes and study sessions."
         )

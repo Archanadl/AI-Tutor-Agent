@@ -163,3 +163,4 @@ yarl==1.24.5
 zstandard==0.25.0
 langchain-chroma
 langchain-huggingface
+fastapi==0.136.1

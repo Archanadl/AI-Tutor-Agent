@@ -114,3 +114,118 @@ def skeleton(lines: int = 3) -> None:
         for i in range(lines)
     )
     st.markdown(html, unsafe_allow_html=True)
+
+
+# ============================================================
+# NEW COMPONENTS — Modern UI Overhaul
+# ============================================================
+
+
+def metric_card(
+    icon: str,
+    label: str,
+    value: str,
+    delta: str = "",
+) -> None:
+    """Modern metric card with gradient top border and hover lift."""
+    st.markdown(
+        f"""
+        <div class="metric-card">
+          <div class="mc-icon">{icon}</div>
+          <div class="mc-label">{label}</div>
+          <div class="mc-value">{value}</div>
+          <div class="mc-delta">{delta}</div>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def render_flashcard(front: str, back: str, index: int, total: int) -> None:
+    """
+    Pure HTML/CSS 3D flip card.
+    Flips on hover — no Streamlit re-run needed for the visual animation.
+    """
+    front_safe = front.replace("<", "&lt;").replace(">", "&gt;")
+    back_safe = back.replace("<", "&lt;").replace(">", "&gt;")
+
+    st.markdown(
+        f"""
+        <div class="flip-card">
+          <div class="flip-card-inner">
+            <div class="flip-card-front">
+              <div class="fc-label">Question</div>
+              <div class="fc-text">{front_safe}</div>
+            </div>
+            <div class="flip-card-back">
+              <div class="fc-label">Answer</div>
+              <div class="fc-text">{back_safe}</div>
+            </div>
+          </div>
+        </div>
+        <div class="flip-card-counter">Card {index + 1} of {total} · Hover to flip</div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def timeline_item(
+    number: int,
+    status: str,
+    tasks: list,
+    total_minutes: int,
+) -> None:
+    """
+    Modern timeline card with status dot and task list.
+    Status: 'completed', 'in_progress', or 'pending'.
+    """
+    status_labels = {
+        "completed": ("✅ Completed", "status-completed"),
+        "in_progress": ("🟡 In Progress", "status-in_progress"),
+        "pending": ("⬜ Pending", "status-pending"),
+    }
+    label, css_class = status_labels.get(status, ("⬜ Pending", "status-pending"))
+
+    tasks_html = ""
+    for task in tasks:
+        topic = task.get("topic", "Study topic")
+        desc = task.get("description", "")
+        dur = task.get("duration_minutes", 0)
+        tasks_html += f"""
+        <div class="tl-task">
+          <span class="tl-task-topic">{topic}</span>
+          <span class="tl-task-dur"> — {dur} min</span>
+          {"<div class='tl-task-desc'>" + desc + "</div>" if desc else ""}
+        </div>
+        """
+
+    st.markdown(
+        f"""
+        <div class="timeline-item {status}">
+          <div class="tl-header">
+            <div class="tl-title">Session {number}</div>
+            <div class="tl-badge {css_class}">{label}</div>
+          </div>
+          {tasks_html}
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+
+def welcome_banner() -> None:
+    """Welcome banner shown in the Chat tab when no chat is open."""
+    st.markdown(
+        """
+        <div class="welcome-banner">
+          <div class="wb-emoji">🎓</div>
+          <h2>Study with a tutor that actually <span class="grad">reads your material.</span></h2>
+          <p class="wb-sub">
+            Upload your notes and textbooks in the sidebar, then ask anything.
+            Every answer shows where it came from, how confident the tutor is,
+            and which agents ran.
+          </p>
+        </div>
+        """,
+        unsafe_allow_html=True,
+    )

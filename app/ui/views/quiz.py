@@ -1,9 +1,9 @@
-"""Quiz view — generation settings, attempt flow, scoring + feedback."""
+"""Quiz view — generation settings, styled option cards, scoring + feedback."""
 
 import streamlit as st
 
 from app.ui.backend import generate_quiz
-from app.ui.components import hero, spacer, stat
+from app.ui.components import hero, metric_card, spacer
 from app.progress import record_quiz_attempt
 
 
@@ -60,13 +60,11 @@ def render():
     ):
         st.session_state.quiz_started = True
         st.session_state.quiz_score = None
+        st.session_state.quiz_submitted = False
 
-        # Clear previous answers and reset counters
+        # Clear previous answers
         for key in list(st.session_state.keys()):
-            if (
-                key.startswith("quiz_answer_")
-                or key.startswith("quiz_reset_")
-            ):
+            if key.startswith("quiz_sel_"):
                 del st.session_state[key]
 
         # Generate fresh questions
@@ -89,10 +87,7 @@ def render():
     # GET QUIZ QUESTIONS
     # ---------------------------------------------------------
 
-    items = st.session_state.get(
-        "quiz_items",
-        [],
-    )
+    items = st.session_state.get("quiz_items", [])
 
     if not items:
         st.warning("No quiz questions are available.")
@@ -101,54 +96,66 @@ def render():
     spacer(18)
 
     st.subheader(f"📝 {topic}")
-    st.caption(
-        f"{difficulty} · {len(items)} questions"
-    )
+    st.caption(f"{difficulty} · {len(items)} questions")
+
+    submitted = st.session_state.get("quiz_submitted", False)
 
     # ---------------------------------------------------------
-    # QUESTIONS
+    # QUESTIONS — Styled Option Cards
     # ---------------------------------------------------------
-
-    answers = []
 
     for i, item in enumerate(items):
+        spacer(6)
 
-        with st.container(border=True):
+        st.markdown(f"**{i + 1}. {item['q']}**")
 
-            st.markdown(
-                f"**{i + 1}. {item['q']}**"
-            )
+        current_sel = st.session_state.get(f"quiz_sel_{i}", None)
+        markers = ["A", "B", "C", "D", "E", "F", "G", "H"]
 
-            # Counter used to reset the radio button
-            reset_count = st.session_state.get(
-                f"quiz_reset_{i}",
-                0,
-            )
+        for j, option in enumerate(item["options"]):
+            marker = markers[j] if j < len(markers) else str(j + 1)
+            is_selected = current_sel == option
+            is_correct = submitted and option == item["answer"]
+            is_wrong = submitted and is_selected and option != item["answer"]
 
-            answer = st.radio(
-                "Select one",
-                item["options"],
-                index=None,
-                key=f"quiz_answer_{i}_{reset_count}",
-                label_visibility="collapsed",
-            )
+            # Determine CSS class
+            css_classes = ["quiz-option"]
+            if is_selected:
+                css_classes.append("selected")
+            if is_correct:
+                css_classes.append("correct")
+            if is_wrong:
+                css_classes.append("wrong")
 
-            answers.append(answer)
+            # Determine marker content for post-submit
+            if is_correct:
+                marker_display = "✓"
+            elif is_wrong:
+                marker_display = "✗"
+            else:
+                marker_display = marker
 
-            # -------------------------------------------------
-            # CLEAR ANSWER
-            # -------------------------------------------------
-
-            if st.button(
-                "↩️ Clear",
-                key=f"clear_answer_{i}",
-                help="Clear your selected answer",
-            ):
-                st.session_state[
-                    f"quiz_reset_{i}"
-                ] = reset_count + 1
-
-                st.rerun()
+            if not submitted:
+                # Use a button that looks like a card
+                if st.button(
+                    f"{marker}. {option}",
+                    key=f"qopt_{i}_{j}",
+                    use_container_width=True,
+                    type="primary" if is_selected else "secondary",
+                ):
+                    st.session_state[f"quiz_sel_{i}"] = option
+                    st.rerun()
+            else:
+                # Post-submission: show styled result cards
+                st.markdown(
+                    f"""
+                    <div class="{' '.join(css_classes)}">
+                      <div class="qo-marker">{marker_display}</div>
+                      <div>{option}</div>
+                    </div>
+                    """,
+                    unsafe_allow_html=True,
+                )
 
     # ---------------------------------------------------------
     # SUBMIT QUIZ
@@ -156,52 +163,47 @@ def render():
 
     spacer(10)
 
-    if st.button(
-        "✅ Submit quiz",
-        type="primary",
-        key="submit_quiz",
-    ):
+    if not submitted:
+        if st.button(
+            "✅ Submit quiz",
+            type="primary",
+            key="submit_quiz",
+        ):
+            answers = [
+                st.session_state.get(f"quiz_sel_{i}", None)
+                for i in range(len(items))
+            ]
 
-        unanswered = [
-            i + 1
-            for i, answer in enumerate(answers)
-            if answer is None
-        ]
+            unanswered = [
+                i + 1
+                for i, answer in enumerate(answers)
+                if answer is None
+            ]
 
-        if unanswered:
-
-            st.warning(
-                "⚠️ Please answer all questions before submitting."
-            )
-
-            st.info(
-                "Unanswered questions: "
-                + ", ".join(map(str, unanswered))
-            )
-
-        else:
-
-            score = sum(
-                1
-                for answer, item in zip(
-                    answers,
-                    items,
+            if unanswered:
+                st.warning(
+                    "⚠️ Please answer all questions before submitting."
                 )
-                if answer == item["answer"]
-            )
-            record_quiz_attempt(
-                topic=topic,
-                difficulty=difficulty,
-                score=score,
-                total=len(items),
-                questions=items,
-            )
-            st.session_state.quiz_score = (
-                score,
-                len(items),
-            )
-            
-            st.rerun()
+                st.info(
+                    "Unanswered questions: "
+                    + ", ".join(map(str, unanswered))
+                )
+            else:
+                score = sum(
+                    1
+                    for answer, item in zip(answers, items)
+                    if answer == item["answer"]
+                )
+                record_quiz_attempt(
+                    topic=topic,
+                    difficulty=difficulty,
+                    score=score,
+                    total=len(items),
+                    questions=items,
+                )
+                st.session_state.quiz_score = (score, len(items))
+                st.session_state.quiz_submitted = True
+                st.rerun()
 
     # ---------------------------------------------------------
     # RESULTS
@@ -210,76 +212,57 @@ def render():
     if st.session_state.quiz_score is not None:
 
         score, total = st.session_state.quiz_score
+        pct = round(score / total * 100)
 
-        pct = round(
-            score / total * 100
-        )
-
-        spacer(14)
+        spacer(20)
 
         a, b, c = st.columns(3)
 
         with a:
-            stat(
+            metric_card(
+                "🎯",
                 "Score",
                 f"{score}/{total}",
-                "",
-                1,
+                "Questions correct",
             )
 
         with b:
-            stat(
+            metric_card(
+                "📊",
                 "Percentage",
                 f"{pct}%",
-                "",
-                2,
+                "Overall accuracy",
             )
 
         with c:
-            stat(
+            metric_card(
+                "🏆",
                 "Verdict",
                 "Strong" if pct >= 70 else "Needs revision",
-                "",
-                3,
+                "Keep practicing!" if pct < 70 else "Well done!",
             )
 
-        st.progress(
-            pct / 100
-        )
+        spacer(12)
+        st.progress(pct / 100)
 
-        spacer(10)
+        spacer(16)
 
         st.subheader("🧾 Review")
 
         for i, item in enumerate(items):
-
-            # Find the current answer using the current reset counter
-            reset_count = st.session_state.get(
-                f"quiz_reset_{i}",
-                0,
-            )
-
-            picked = st.session_state.get(
-                f"quiz_answer_{i}_{reset_count}"
-            )
-
+            picked = st.session_state.get(f"quiz_sel_{i}")
             ok = picked == item["answer"]
 
             with st.expander(
                 f"{'✅' if ok else '❌'} "
                 f"{i + 1}. {item['q']}"
             ):
-
                 st.write(
                     f"**Your answer:** "
                     f"{picked if picked is not None else 'Not answered'}"
                 )
-
                 st.write(
                     f"**Correct answer:** "
                     f"{item['answer']}"
                 )
-
-                st.caption(
-                    item["why"]
-                )
+                st.caption(item["why"])

@@ -1243,18 +1243,776 @@ hr {
 
 #MainMenu,
 footer,
+header,
 header [data-testid="stDecoration"] {
-    visibility: hidden;
+    display: none !important;
+    visibility: hidden !important;
+    height: 0 !important;
 }
 
 .block-container {
-    padding-top: 2.2rem;
+    padding: 1rem 1.5rem 2rem;
 
-    max-width: 1180px;
+    max-width: 1400px;
 
     animation:
         pageIn .55s
         cubic-bezier(.2,.7,.2,1);
+}
+
+
+/* ============================================================
+   TABS — Modern Styled
+   ============================================================ */
+
+[data-baseweb="tab-list"] {
+    gap: 0;
+
+    background: var(--surface);
+
+    border: 1px solid var(--border);
+
+    border-radius: 16px;
+
+    padding: 4px;
+
+    margin-bottom: 24px;
+}
+
+[data-baseweb="tab"] {
+    border-radius: 12px !important;
+
+    padding: 10px 20px !important;
+
+    font-weight: 600 !important;
+
+    font-size: .92rem !important;
+
+    transition:
+        background .25s,
+        color .25s,
+        box-shadow .25s !important;
+}
+
+[data-baseweb="tab"]:hover {
+    background: var(--surface-strong) !important;
+}
+
+[data-baseweb="tab"][aria-selected="true"] {
+    background:
+        linear-gradient(
+            135deg,
+            color-mix(in srgb, var(--primary) 20%, var(--surface-strong)),
+            color-mix(in srgb, var(--primary-2) 15%, var(--surface-strong))
+        ) !important;
+
+    box-shadow:
+        0 4px 16px -6px
+        color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+[data-baseweb="tab"][aria-selected="true"] p,
+[data-baseweb="tab"][aria-selected="true"] div {
+    color: var(--text) !important;
+
+    font-weight: 700 !important;
+}
+
+/* Hide the default tab highlight bar */
+[data-baseweb="tab-highlight"] {
+    display: none !important;
+}
+
+[data-baseweb="tab-border"] {
+    display: none !important;
+}
+
+
+/* ============================================================
+   METRIC CARDS — Modern Dashboard
+   ============================================================ */
+
+.metric-card {
+    position: relative;
+
+    overflow: hidden;
+
+    border: 1px solid var(--border);
+
+    border-radius: 20px;
+
+    padding: 22px 24px;
+
+    background: var(--surface);
+
+    backdrop-filter: blur(12px);
+
+    box-shadow:
+        0 8px 32px -16px rgba(0,0,0,0.15);
+
+    transition:
+        transform .3s,
+        border-color .3s,
+        box-shadow .3s;
+}
+
+.metric-card::before {
+    content: '';
+
+    position: absolute;
+
+    top: 0;
+    left: 0;
+    right: 0;
+
+    height: 3px;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--primary),
+            var(--primary-2),
+            var(--accent)
+        );
+
+    border-radius: 20px 20px 0 0;
+}
+
+.metric-card:hover {
+    transform: translateY(-4px);
+
+    border-color: var(--primary);
+
+    box-shadow:
+        0 16px 40px -18px
+        color-mix(in srgb, var(--primary) 50%, transparent);
+}
+
+.metric-card .mc-icon {
+    font-size: 1.6rem;
+
+    margin-bottom: 8px;
+}
+
+.metric-card .mc-label {
+    font-size: .72rem;
+
+    letter-spacing: .12em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+    margin-bottom: 4px;
+}
+
+.metric-card .mc-value {
+    font-family: 'Sora', sans-serif;
+
+    font-size: 2rem;
+
+    font-weight: 700;
+
+    color: var(--text);
+
+    line-height: 1.1;
+}
+
+.metric-card .mc-delta {
+    font-size: .8rem;
+
+    color: var(--primary);
+
+    margin-top: 6px;
+}
+
+
+/* ============================================================
+   THICK PROGRESS BARS
+   ============================================================ */
+
+.stProgress > div > div > div {
+    height: 12px !important;
+
+    border-radius: 999px !important;
+}
+
+.stProgress > div > div > div > div {
+    height: 12px !important;
+
+    border-radius: 999px !important;
+
+    background:
+        linear-gradient(
+            90deg,
+            var(--primary),
+            var(--primary-2)
+        ) !important;
+}
+
+
+/* ============================================================
+   3D FLASHCARD FLIP
+   ============================================================ */
+
+.flip-card {
+    perspective: 1200px;
+
+    width: 100%;
+
+    height: 320px;
+
+    cursor: pointer;
+}
+
+.flip-card-inner {
+    position: relative;
+
+    width: 100%;
+    height: 100%;
+
+    transition: transform 0.7s cubic-bezier(.4,.2,.2,1);
+
+    transform-style: preserve-3d;
+}
+
+.flip-card:hover .flip-card-inner,
+.flip-card.flipped .flip-card-inner {
+    transform: rotateY(180deg);
+}
+
+.flip-card-front,
+.flip-card-back {
+    position: absolute;
+
+    top: 0;
+    left: 0;
+
+    width: 100%;
+    height: 100%;
+
+    backface-visibility: hidden;
+    -webkit-backface-visibility: hidden;
+
+    border: 1px solid var(--border);
+
+    border-radius: 24px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+
+    padding: 32px;
+
+    text-align: center;
+
+    box-shadow:
+        0 12px 40px -18px rgba(0,0,0,0.25);
+
+    overflow: hidden;
+}
+
+.flip-card-front {
+    background:
+        linear-gradient(
+            160deg,
+            color-mix(in srgb, var(--primary) 10%, var(--surface)),
+            var(--surface) 60%
+        );
+}
+
+.flip-card-front::before {
+    content: '❓';
+
+    font-size: 2.5rem;
+
+    margin-bottom: 16px;
+
+    opacity: 0.7;
+}
+
+.flip-card-front .fc-label {
+    font-size: .7rem;
+
+    letter-spacing: .14em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+    margin-bottom: 12px;
+}
+
+.flip-card-front .fc-text {
+    font-family: 'Sora', sans-serif;
+
+    font-size: 1.2rem;
+
+    font-weight: 600;
+
+    color: var(--text);
+
+    line-height: 1.5;
+}
+
+.flip-card-back {
+    background:
+        linear-gradient(
+            160deg,
+            color-mix(in srgb, var(--primary-2) 12%, var(--surface)),
+            var(--surface) 60%
+        );
+
+    transform: rotateY(180deg);
+}
+
+.flip-card-back::before {
+    content: '💡';
+
+    font-size: 2.5rem;
+
+    margin-bottom: 16px;
+
+    opacity: 0.7;
+}
+
+.flip-card-back .fc-label {
+    font-size: .7rem;
+
+    letter-spacing: .14em;
+
+    text-transform: uppercase;
+
+    color: var(--muted);
+
+    margin-bottom: 12px;
+}
+
+.flip-card-back .fc-text {
+    font-family: 'Sora', sans-serif;
+
+    font-size: 1.15rem;
+
+    font-weight: 500;
+
+    color: var(--text);
+
+    line-height: 1.5;
+}
+
+.flip-card-counter {
+    font-size: .78rem;
+
+    color: var(--muted);
+
+    text-align: center;
+
+    margin-top: 10px;
+
+    font-weight: 600;
+}
+
+
+/* ============================================================
+   QUIZ OPTION CARDS
+   ============================================================ */
+
+.quiz-option-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 12px 0;
+}
+
+.quiz-option {
+    border: 1.5px solid var(--border);
+
+    border-radius: 14px;
+
+    padding: 14px 20px;
+
+    background: var(--surface);
+
+    cursor: pointer;
+
+    transition:
+        transform .2s,
+        border-color .25s,
+        background .25s,
+        box-shadow .25s;
+
+    display: flex;
+    align-items: center;
+    gap: 14px;
+
+    font-size: .95rem;
+
+    color: var(--text);
+}
+
+.quiz-option:hover {
+    transform: translateX(4px);
+
+    border-color: var(--primary);
+
+    background: var(--surface-strong);
+
+    box-shadow:
+        0 6px 20px -10px
+        color-mix(in srgb, var(--primary) 40%, transparent);
+}
+
+.quiz-option .qo-marker {
+    width: 32px;
+    height: 32px;
+
+    border-radius: 10px;
+
+    border: 1.5px solid var(--border);
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-weight: 700;
+    font-size: .85rem;
+
+    color: var(--muted);
+
+    flex-shrink: 0;
+
+    transition:
+        background .25s,
+        border-color .25s,
+        color .25s;
+}
+
+.quiz-option:hover .qo-marker {
+    border-color: var(--primary);
+
+    color: var(--primary);
+}
+
+.quiz-option.selected {
+    border-color: var(--primary) !important;
+
+    background:
+        color-mix(
+            in srgb,
+            var(--primary) 8%,
+            var(--surface)
+        ) !important;
+}
+
+.quiz-option.selected .qo-marker {
+    background:
+        linear-gradient(
+            135deg,
+            var(--primary),
+            var(--primary-2)
+        );
+
+    border-color: transparent;
+
+    color: var(--primary-button-text);
+}
+
+.quiz-option.correct {
+    border-color: #22c55e !important;
+
+    background:
+        color-mix(
+            in srgb,
+            #22c55e 10%,
+            var(--surface)
+        ) !important;
+}
+
+.quiz-option.correct .qo-marker {
+    background: #22c55e;
+    border-color: transparent;
+    color: white;
+}
+
+.quiz-option.wrong {
+    border-color: #ef4444 !important;
+
+    background:
+        color-mix(
+            in srgb,
+            #ef4444 8%,
+            var(--surface)
+        ) !important;
+}
+
+.quiz-option.wrong .qo-marker {
+    background: #ef4444;
+    border-color: transparent;
+    color: white;
+}
+
+
+/* ============================================================
+   STUDY TIMELINE
+   ============================================================ */
+
+.timeline {
+    position: relative;
+
+    padding-left: 36px;
+}
+
+.timeline::before {
+    content: '';
+
+    position: absolute;
+
+    left: 14px;
+    top: 0;
+    bottom: 0;
+
+    width: 2px;
+
+    background:
+        linear-gradient(
+            180deg,
+            var(--primary),
+            var(--border) 70%,
+            transparent
+        );
+}
+
+.timeline-item {
+    position: relative;
+
+    border: 1px solid var(--border);
+
+    border-radius: 18px;
+
+    padding: 20px 22px;
+
+    margin-bottom: 16px;
+
+    background: var(--surface);
+
+    backdrop-filter: blur(10px);
+
+    transition:
+        transform .28s,
+        border-color .28s,
+        box-shadow .28s;
+}
+
+.timeline-item:hover {
+    transform: translateX(4px);
+
+    border-color:
+        color-mix(
+            in srgb,
+            var(--primary) 50%,
+            var(--border)
+        );
+
+    box-shadow:
+        0 8px 24px -12px rgba(0,0,0,0.15);
+}
+
+.timeline-item::before {
+    content: '';
+
+    position: absolute;
+
+    left: -30px;
+    top: 26px;
+
+    width: 12px;
+    height: 12px;
+
+    border-radius: 50%;
+
+    border: 2px solid var(--surface);
+
+    background: var(--border);
+
+    z-index: 1;
+}
+
+.timeline-item.completed::before {
+    background: #22c55e;
+
+    box-shadow: 0 0 8px rgba(34,197,94,0.5);
+}
+
+.timeline-item.in_progress::before {
+    background: #f59e0b;
+
+    box-shadow: 0 0 8px rgba(245,158,11,0.5);
+
+    animation: blink 1.5s infinite;
+}
+
+.timeline-item.pending::before {
+    background: var(--muted);
+}
+
+.timeline-item .tl-header {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    margin-bottom: 8px;
+}
+
+.timeline-item .tl-title {
+    font-family: 'Sora', sans-serif;
+
+    font-size: 1.05rem;
+
+    font-weight: 600;
+
+    color: var(--text);
+}
+
+.timeline-item .tl-badge {
+    font-size: .72rem;
+
+    font-weight: 600;
+
+    padding: 4px 12px;
+
+    border-radius: 999px;
+
+    text-transform: uppercase;
+
+    letter-spacing: .08em;
+}
+
+.tl-badge.status-completed {
+    background: color-mix(in srgb, #22c55e 15%, var(--surface));
+
+    color: #22c55e;
+
+    border: 1px solid color-mix(in srgb, #22c55e 30%, transparent);
+}
+
+.tl-badge.status-in_progress {
+    background: color-mix(in srgb, #f59e0b 15%, var(--surface));
+
+    color: #f59e0b;
+
+    border: 1px solid color-mix(in srgb, #f59e0b 30%, transparent);
+}
+
+.tl-badge.status-pending {
+    background: var(--surface-strong);
+
+    color: var(--muted);
+
+    border: 1px solid var(--border);
+}
+
+.timeline-item .tl-task {
+    font-size: .88rem;
+
+    color: var(--text);
+
+    padding: 6px 0;
+
+    border-bottom: 1px solid
+        color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+.timeline-item .tl-task:last-child {
+    border-bottom: none;
+}
+
+.timeline-item .tl-task-topic {
+    font-weight: 600;
+}
+
+.timeline-item .tl-task-dur {
+    color: var(--muted);
+
+    font-size: .8rem;
+}
+
+.timeline-item .tl-task-desc {
+    color: var(--muted);
+
+    font-size: .78rem;
+
+    margin-top: 2px;
+}
+
+
+/* ============================================================
+   WELCOME BANNER (Chat empty state)
+   ============================================================ */
+
+.welcome-banner {
+    text-align: center;
+
+    padding: 48px 32px;
+
+    border: 1px solid var(--border);
+
+    border-radius: 26px;
+
+    background:
+        linear-gradient(
+            160deg,
+            color-mix(in srgb, var(--primary) 8%, var(--surface)),
+            color-mix(in srgb, var(--primary-2) 6%, var(--surface)) 50%,
+            color-mix(in srgb, var(--accent) 6%, var(--surface))
+        );
+
+    backdrop-filter: blur(14px);
+
+    box-shadow: var(--shadow);
+
+    margin-bottom: 24px;
+}
+
+.welcome-banner .wb-emoji {
+    font-size: 3.5rem;
+
+    margin-bottom: 12px;
+}
+
+.welcome-banner h2 {
+    font-family: 'Sora', sans-serif !important;
+
+    font-size: 1.8rem !important;
+
+    margin: 0 0 8px !important;
+}
+
+.welcome-banner .wb-sub {
+    color: var(--muted);
+
+    font-size: .95rem;
+
+    max-width: 52ch;
+
+    margin: 0 auto;
+
+    line-height: 1.6;
+}
+
+
+/* ============================================================
+   RATING PILLS (Flashcard SM-2)
+   ============================================================ */
+
+.rating-pills {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    flex-wrap: wrap;
+    margin-top: 16px;
 }
 
 
@@ -1275,6 +2033,18 @@ header [data-testid="stDecoration"] {
 
     .hero h1 {
         font-size: 2rem;
+    }
+
+    .flip-card {
+        height: 260px;
+    }
+
+    .metric-card .mc-value {
+        font-size: 1.5rem;
+    }
+
+    .timeline {
+        padding-left: 28px;
     }
 }
 

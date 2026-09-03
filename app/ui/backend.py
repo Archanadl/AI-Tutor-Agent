@@ -276,6 +276,42 @@ def ask_tutor(
 
 
 # ============================================================
+# QUIZ & FLASHCARDS HELPER
+# ============================================================
+def _extract_json_from_response(response_text: str) -> str:
+    """Extracts JSON from an LLM response, handling <think> tags and markdown blocks."""
+    # 1. Try to extract from markdown code blocks
+    json_match = re.search(r'```(?:json)?\n(.*?)\n```', response_text, re.DOTALL | re.IGNORECASE)
+    if json_match:
+        response_text = json_match.group(1)
+    else:
+        # 2. Try to strip <think>...</think> tags
+        response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
+        
+        # 3. If there is still an unclosed <think> tag, try to split
+        if "<think>" in response_text:
+            parts = response_text.split("<think>")
+            if len(parts) > 1 and "]" in parts[1]: # Try to find where the JSON starts (usually [ )
+                # Not a perfect heuristic, but if it fails we fall back.
+                # Actually, if there's an unclosed <think>, just find the first '[' or '{'
+                idx = response_text.find("[")
+                if idx == -1: idx = response_text.find("{")
+                if idx != -1:
+                    response_text = response_text[idx:]
+        
+    # 4. Fallback cleanup
+    response_text = response_text.strip()
+    if response_text.startswith("```json"):
+        response_text = response_text[7:]
+    elif response_text.startswith("```"):
+        response_text = response_text[3:]
+        
+    if response_text.endswith("```"):
+        response_text = response_text[:-3]
+        
+    return response_text.strip()
+
+# ============================================================
 # QUIZ
 # ============================================================
 
@@ -303,20 +339,8 @@ def generate_quiz(
         response = quiz_llm.invoke(formatted_prompt)
         response_text = extract_text(response).strip()
         
-        # Strip out <think> tags that reasoning models like Qwen might output
-        if "</think>" in response_text:
-            response_text = response_text.split("</think>")[-1].strip()
-            
-        # Clean up markdown formatting if the LLM wrapped it in ```json ... ```
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        elif response_text.startswith("```"):
-            response_text = response_text[3:]
-            
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-            
-        response_text = response_text.strip()
+        response_text = _extract_json_from_response(response_text)
+        
         quiz_data = json.loads(response_text)
         
         if isinstance(quiz_data, list):
@@ -345,15 +369,9 @@ def get_flashcards(
         response = llm.invoke(formatted_prompt)
         response_text = extract_text(response).strip()
 
-        if response_text.startswith("```json"):
-            response_text = response_text[7:]
-        elif response_text.startswith("```"):
-            response_text = response_text[3:]
+        response_text = _extract_json_from_response(response_text)
 
-        if response_text.endswith("```"):
-            response_text = response_text[:-3]
-
-        cards = json.loads(response_text.strip())
+        cards = json.loads(response_text)
 
         if not isinstance(cards, list):
             return []

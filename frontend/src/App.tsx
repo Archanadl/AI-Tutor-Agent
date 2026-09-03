@@ -42,7 +42,7 @@ function App() {
           </div>
 
           <div className="sidebar-header" style={{ borderBottom: 'none', borderTop: '1px solid var(--border)' }}>
-            <button className="nav-item" style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer' }}>
+            <button onClick={() => alert("Settings page coming soon!")} className="nav-item" style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'inherit' }}>
               <Settings size={20} />
               Settings
             </button>

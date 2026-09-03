@@ -72,7 +72,7 @@ export const MindmapView = () => {
 
       {isLoading && (
         <div className="card" style={{ textAlign: 'center', padding: '3rem' }}>
-          <Loader2 className="lucide-spin" size={32} style={{ margin: '0 auto 1rem', color: 'var(--primary)' }} />
+          <Loader2 className="animate-spin" size={32} style={{ margin: '0 auto 1rem', color: 'var(--primary)' }} />
           <p>Agent generating mind map...</p>
         </div>
       )}

@@ -237,7 +237,7 @@ const StudyPlanComponent = () => {
         )}
 
         <button type="submit" className="btn btn-primary" style={{ marginTop: '1rem' }} disabled={isLoading}>
-          {isLoading ? <Loader2 className="lucide-spin" size={18} /> : '✨ Generate Personalized Study Plan'}
+          {isLoading ? <Loader2 className="animate-spin" size={18} /> : '✨ Generate Personalized Study Plan'}
         </button>
       </form>
     </div>

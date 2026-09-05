@@ -333,7 +333,7 @@ def generate_quiz(
             model=settings.groq_model,
             temperature=0,
             api_key=settings.groq_api_key,
-            max_tokens=4000,
+            max_tokens=800,
         )
 
         response = quiz_llm.invoke(formatted_prompt)

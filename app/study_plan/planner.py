@@ -278,7 +278,8 @@ if not os.getenv("GROQ_API_KEY"):
 llm = ChatGroq(
     model="qwen/qwen3.6-27b",
     temperature=0.7,
-    reasoning_effort="none"
+    reasoning_effort="none",
+    max_tokens=800
 )
 def generate_study_plan(
     goal: str,

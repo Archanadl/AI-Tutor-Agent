@@ -55,7 +55,8 @@ if settings.groq_api_key:
     llm = ChatGroq(
         model=settings.groq_model,
         temperature=settings.llm_temperature,
-        api_key=settings.groq_api_key
+        api_key=settings.groq_api_key,
+        max_tokens=800
     )
 elif settings.google_api_key:
     llm = ChatGoogleGenerativeAI(

@@ -114,28 +114,28 @@ const FlashcardsComponent = () => {
             {/* Front */}
             <div style={{
               position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden',
-              background: 'linear-gradient(160deg, color-mix(in srgb, var(--primary) 10%, var(--surface)), var(--surface) 60%)',
-              border: '1px solid var(--border)', borderRadius: '24px', display: 'flex', flexDirection: 'column',
+              background: 'var(--surface)',
+              border: 'var(--border)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', padding: '32px', textAlign: 'center',
-              boxShadow: '0 12px 40px -18px rgba(0,0,0,0.25)'
+              boxShadow: 'var(--shadow)'
             }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '16px', opacity: 0.7 }}>❓</div>
-              <div style={{ fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '12px' }}>Question</div>
-              <div style={{ fontFamily: "'Sora', sans-serif", fontSize: '1.2rem', fontWeight: 600 }}>{cards[currentIdx].front}</div>
+              <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>❓</div>
+              <div style={{ fontSize: '0.74rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '12px', fontWeight: 800 }}>Question</div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.2rem', fontWeight: 700 }}>{cards[currentIdx].front}</div>
             </div>
             
             {/* Back */}
             <div style={{
               position: 'absolute', width: '100%', height: '100%', backfaceVisibility: 'hidden',
-              background: 'linear-gradient(160deg, color-mix(in srgb, var(--primary-2) 12%, var(--surface)), var(--surface) 60%)',
-              border: '1px solid var(--border)', borderRadius: '24px', display: 'flex', flexDirection: 'column',
+              background: 'var(--surface-strong)',
+              border: 'var(--border)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column',
               alignItems: 'center', justifyContent: 'center', padding: '32px', textAlign: 'center',
-              boxShadow: '0 12px 40px -18px rgba(0,0,0,0.25)',
+              boxShadow: 'var(--shadow)',
               transform: 'rotateY(180deg)'
             }}>
-              <div style={{ fontSize: '2.5rem', marginBottom: '16px', opacity: 0.7 }}>💡</div>
-              <div style={{ fontSize: '0.7rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '12px' }}>Answer</div>
-              <div style={{ fontFamily: "'Sora', sans-serif", fontSize: '1.15rem', fontWeight: 500 }}>{cards[currentIdx].back}</div>
+              <div style={{ fontSize: '2.5rem', marginBottom: '16px' }}>💡</div>
+              <div style={{ fontSize: '0.74rem', letterSpacing: '0.14em', textTransform: 'uppercase', color: 'var(--muted)', marginBottom: '12px', fontWeight: 800 }}>Answer</div>
+              <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: '1.15rem', fontWeight: 600 }}>{cards[currentIdx].back}</div>
             </div>
           </div>
         </div>
@@ -298,12 +298,12 @@ const QuizComponent = () => {
                 const isCorrect = isSubmitted && opt === item.answer;
                 const isWrong = isSubmitted && isSelected && opt !== item.answer;
                 
-                let borderColor = 'var(--border)';
+                let borderColor = 'var(--border-color)';
                 let bg = 'var(--surface)';
                 
                 if (isSelected) { borderColor = 'var(--primary)'; bg = 'var(--surface-strong)'; }
-                if (isCorrect) { borderColor = 'var(--primary)'; bg = 'color-mix(in srgb, var(--primary) 20%, var(--surface))'; }
-                if (isWrong) { borderColor = 'var(--danger)'; bg = 'color-mix(in srgb, var(--danger) 20%, var(--surface))'; }
+                if (isCorrect) { borderColor = 'var(--primary)'; bg = 'var(--surface-strong)'; }
+                if (isWrong) { borderColor = 'var(--danger)'; bg = 'var(--surface)'; }
 
                 return (
                   <button 
@@ -312,7 +312,7 @@ const QuizComponent = () => {
                     style={{ 
                       textAlign: 'left', 
                       cursor: isSubmitted ? 'default' : 'pointer',
-                      border: `1px solid ${borderColor}`,
+                      border: `var(--border-width) solid ${borderColor}`,
                       background: bg,
                       padding: '1rem'
                     }}
@@ -324,7 +324,7 @@ const QuizComponent = () => {
               })}
             </div>
             {isSubmitted && (
-              <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-strong)', borderRadius: '12px', borderLeft: '4px solid var(--primary-2)' }}>
+              <div style={{ marginTop: '1rem', padding: '1rem', background: 'var(--surface-strong)', borderRadius: 'var(--radius)', border: 'var(--border)', borderLeft: '4px solid var(--primary-2)' }}>
                 <p style={{ color: 'var(--muted)', fontSize: '0.9rem' }}>{item.why}</p>
               </div>
             )}

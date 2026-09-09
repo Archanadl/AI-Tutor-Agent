@@ -12,8 +12,17 @@ import { FlashcardsView } from './components/flashcards/FlashcardsView';
 import { MindmapView } from './components/mindmap/MindmapView';
 
 function App() {
-  const [theme, setTheme] = useState<'dark' | 'light' | 'solar-flare'>(
-    (localStorage.getItem('app-theme') as any) || 'dark'
+  type Theme = 'midnight-aurora' | 'forest-deep' | 'solar-flare' | 'light-frost';
+  const themes: Theme[] = ['midnight-aurora', 'forest-deep', 'solar-flare', 'light-frost'];
+  const themeLabels: Record<Theme, string> = {
+    'midnight-aurora': '🌌 Midnight Aurora',
+    'forest-deep': '🌲 Forest Deep',
+    'solar-flare': '🔥 Solar Flare',
+    'light-frost': '❄️ Light Frost',
+  };
+
+  const [theme, setTheme] = useState<Theme>(
+    (localStorage.getItem('app-theme') as Theme) || 'midnight-aurora'
   );
 
   useEffect(() => {
@@ -22,9 +31,8 @@ function App() {
   }, [theme]);
 
   const cycleTheme = () => {
-    if (theme === 'dark') setTheme('light');
-    else if (theme === 'light') setTheme('solar-flare');
-    else setTheme('dark');
+    const idx = themes.indexOf(theme);
+    setTheme(themes[(idx + 1) % themes.length]);
   };
 
   return (
@@ -56,10 +64,10 @@ function App() {
             </NavLink>
           </div>
 
-          <div className="sidebar-header" style={{ borderBottom: 'none', borderTop: '1px solid var(--border)' }}>
+          <div className="sidebar-header" style={{ borderBottom: 'none', borderTop: 'var(--border)' }}>
             <button onClick={cycleTheme} className="nav-item" style={{ width: '100%', background: 'transparent', border: 'none', textAlign: 'left', cursor: 'pointer', color: 'inherit' }}>
               <Palette size={20} />
-              Theme: {theme === 'dark' ? 'Dark' : theme === 'light' ? 'Light' : 'Solar Flare'}
+              {themeLabels[theme]}
             </button>
           </div>
         </aside>

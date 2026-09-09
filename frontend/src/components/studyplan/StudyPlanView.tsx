@@ -148,7 +148,7 @@ const StudyPlanComponent = () => {
                     <h4 style={{ marginBottom: '4px' }}>Session {session.session}</h4>
                     <span style={{ 
                       fontSize: '0.75rem', padding: '2px 8px', borderRadius: '99px',
-                      background: isCompleted ? 'color-mix(in srgb, var(--primary) 20%, transparent)' : 'var(--surface-strong)',
+                      background: isCompleted ? 'var(--surface-strong)' : 'var(--surface)',
                       color: isCompleted ? 'var(--primary)' : 'var(--muted)'
                     }}>
                       {session.status.replace('_', ' ').toUpperCase()}

@@ -7,8 +7,8 @@ AI-Tutor CRAG pipeline.
 Run locally:
     python -m mcp_server.server
 
-The server listens on http://127.0.0.1:8000/mcp (streamable-http) so it
-won't collide with Streamlit (port 8501) or the FastAPI RAG backend.
+The server listens on http://127.0.0.1:8001/mcp.
+FastAPI continues to use port 8000.
 """
 
 from __future__ import annotations
@@ -18,18 +18,23 @@ import logging
 
 from fastmcp import FastMCP
 
+
 # ---------------------------------------------------------------------------
 # Logging
 # ---------------------------------------------------------------------------
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s | %(name)s | %(levelname)s | %(message)s",
 )
+
 logger = logging.getLogger("mcp_server")
+
 
 # ---------------------------------------------------------------------------
 # FastMCP instance
 # ---------------------------------------------------------------------------
+
 mcp = FastMCP(
     "AI-Tutor-Search",
     instructions=(
@@ -38,6 +43,7 @@ mcp = FastMCP(
         "educational results with no API key required."
     ),
 )
+
 
 # ---------------------------------------------------------------------------
 # Tool: web_search
@@ -48,19 +54,15 @@ def web_search(query: str, max_results: int = 3) -> str:
     """Search the web for educational content using DuckDuckGo.
 
     Args:
-        query: The search query string (e.g. a student's question).
-        max_results: Maximum number of results to return (default 3).
+        query: The search query string.
+        max_results: Maximum number of results to return.
 
     Returns:
-        A JSON string containing a list of result objects, each with
-        ``title``, ``snippet``, and ``url`` keys.  Returns an empty
-        list ``"[]"`` on failure.
+        JSON string containing search results.
     """
-    # Import here so the module can be imported even if the package is
-    # temporarily unavailable (e.g. during tests with mocks).
-    # The original `duckduckgo_search` package (pinned in requirements.txt)
-    # was renamed to `ddgs`.  Try the new name first, fall back to the old.
+
     DDGS = None
+
     try:
         from ddgs import DDGS
     except ImportError:
@@ -76,7 +78,11 @@ def web_search(query: str, max_results: int = 3) -> str:
         )
         return json.dumps([])
 
-    logger.info("web_search called — query=%r, max_results=%d", query, max_results)
+    logger.info(
+        "web_search called — query=%r, max_results=%d",
+        query,
+        max_results,
+    )
 
     try:
         with DDGS() as ddgs:
@@ -94,26 +100,41 @@ def web_search(query: str, max_results: int = 3) -> str:
             for r in raw_results
         ]
 
-        logger.info("web_search returned %d results", len(results))
+        logger.info(
+            "web_search returned %d results",
+            len(results),
+        )
+
         return json.dumps(results)
 
     except TimeoutError:
-        logger.warning("web_search timed out for query=%r", query)
+        logger.warning(
+            "web_search timed out for query=%r",
+            query,
+        )
         return json.dumps([])
 
     except Exception:
-        logger.exception("web_search failed for query=%r", query)
+        logger.exception(
+            "web_search failed for query=%r",
+            query,
+        )
         return json.dumps([])
 
 
 # ---------------------------------------------------------------------------
-# Entry-point
+# Entry point
 # ---------------------------------------------------------------------------
+
 if __name__ == "__main__":
-    logger.info("Starting AI-Tutor-Search MCP server on http://127.0.0.1:8000/mcp")
+    logger.info(
+        "Starting AI-Tutor-Search MCP server "
+        "on http://127.0.0.1:8001/mcp"
+    )
+
     mcp.run(
         transport="streamable-http",
         host="127.0.0.1",
-        port=8000,
+        port=8001,
         path="/mcp",
     )

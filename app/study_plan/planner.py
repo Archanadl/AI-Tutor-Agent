@@ -3,6 +3,7 @@ import os
 
 from dotenv import load_dotenv
 from langchain_groq import ChatGroq
+from app.rag.config import settings
 
 load_dotenv()
 
@@ -276,10 +277,10 @@ if not os.getenv("GROQ_API_KEY"):
         "GROQ_API_KEY is not set. Please check your .env file."
     )
 llm = ChatGroq(
-    model="qwen/qwen3.6-27b",
+    model=settings.groq_model,
     temperature=0.7,
     reasoning_effort="none",
-    max_tokens=800
+    max_tokens=4000
 )
 def generate_study_plan(
     goal: str,

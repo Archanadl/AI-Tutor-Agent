@@ -509,8 +509,8 @@ def generate_mindmap(topic: str, document_id: Optional[str] = None) -> str:
             # 2. Try to strip <think>...</think> tags
             response_text = re.sub(r'<think>.*?</think>', '', response_text, flags=re.DOTALL)
             
-            # 3. If there is still a <think> tag (e.g. unclosed), just find 'mindmap'
-            idx = response_text.find("mindmap")
+            # 3. If there is still a <think> tag (e.g. unclosed), just find 'flowchart'
+            idx = response_text.find("flowchart")
             if idx != -1:
                 response_text = response_text[idx:]
             

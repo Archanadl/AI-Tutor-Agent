@@ -7,7 +7,7 @@ from app.rag.config import settings
 
 load_dotenv()
 
-  
+
 def validate_input(
     goal: str,
     current_level: str,
@@ -34,43 +34,33 @@ def validate_input(
     if not topics:
         raise ValueError("At least one topic is required.")
 
-    cleaned_topics = [
-        topic.strip()
-        for topic in topics
-        if topic.strip()
-    ]
+    cleaned_topics = [topic.strip() for topic in topics if topic.strip()]
 
     if not cleaned_topics:
         raise ValueError("At least one valid topic is required.")
 
     if daily_hours <= 0:
-        raise ValueError(
-            "Available study time must be greater than 0."
-        )
+        raise ValueError("Available study time must be greater than 0.")
 
     if duration_days <= 0:
-        raise ValueError(
-            "Number of study sessions must be greater than 0."
-        )
+        raise ValueError("Number of study sessions must be greater than 0.")
     if plan_type not in {"learning", "exam_preparation"}:
-        raise ValueError(
-        "plan_type must be either 'learning' or 'exam_preparation'."
-    )
+        raise ValueError("plan_type must be either 'learning' or 'exam_preparation'.")
 
     if plan_type == "exam_preparation" and not exam_date:
-        raise ValueError(
-        "exam_date is required for exam preparation mode."
-    )
+        raise ValueError("exam_date is required for exam preparation mode.")
 
     return {
-    "goal": goal.strip(),
-    "current_level": current_level.strip(),
-    "topics": cleaned_topics,
-    "daily_hours": daily_hours,
-    "duration_days": duration_days,
-    "plan_type": plan_type,
-    "exam_date": exam_date,
-}
+        "goal": goal.strip(),
+        "current_level": current_level.strip(),
+        "topics": cleaned_topics,
+        "daily_hours": daily_hours,
+        "duration_days": duration_days,
+        "plan_type": plan_type,
+        "exam_date": exam_date,
+    }
+
+
 STUDY_PLAN_PROMPT = """
 You are an expert personalized study-plan generator.
 
@@ -273,15 +263,10 @@ Return exactly this structure:
 }}
 """
 if not os.getenv("GROQ_API_KEY"):
-    raise ValueError(
-        "GROQ_API_KEY is not set. Please check your .env file."
-    )
-llm = ChatGroq(
-    model=settings.groq_model,
-    temperature=0.7,
-    reasoning_effort="none",
-    max_tokens=4000
-)
+    raise ValueError("GROQ_API_KEY is not set. Please check your .env file.")
+llm = ChatGroq(model=settings.groq_model, temperature=0.7, max_tokens=4000)
+
+
 def generate_study_plan(
     goal: str,
     current_level: str,
@@ -296,24 +281,24 @@ def generate_study_plan(
     """
 
     validated = validate_input(
-    goal=goal,
-    current_level=current_level,
-    topics=topics,
-    daily_hours=daily_hours,
-    duration_days=duration_days,
-    plan_type=plan_type,
-    exam_date=exam_date,
+        goal=goal,
+        current_level=current_level,
+        topics=topics,
+        daily_hours=daily_hours,
+        duration_days=duration_days,
+        plan_type=plan_type,
+        exam_date=exam_date,
     )
 
     prompt = STUDY_PLAN_PROMPT.format(
-    goal=validated["goal"],
-    current_level=validated["current_level"],
-    topics=", ".join(validated["topics"]),
-    daily_hours=validated["daily_hours"],
-    duration_days=validated["duration_days"],
-    plan_type=validated["plan_type"],
-    exam_date=validated["exam_date"] or "Not applicable",
-   )
+        goal=validated["goal"],
+        current_level=validated["current_level"],
+        topics=", ".join(validated["topics"]),
+        daily_hours=validated["daily_hours"],
+        duration_days=validated["duration_days"],
+        plan_type=validated["plan_type"],
+        exam_date=validated["exam_date"] or "Not applicable",
+    )
 
     response = llm.invoke(prompt)
 
@@ -332,9 +317,7 @@ def generate_study_plan(
     try:
         plan = json.loads(response_text)
     except json.JSONDecodeError as error:
-        raise ValueError(
-            "The LLM returned invalid JSON."
-        ) from error
+        raise ValueError("The LLM returned invalid JSON.") from error
 
     # Initialize every generated study session as pending.
     # Validate and initialize generated study sessions.
@@ -345,8 +328,7 @@ def generate_study_plan(
         session["status"] = "pending"
 
         total_minutes = sum(
-            task.get("duration_minutes", 0)
-            for task in session.get("tasks", [])
+            task.get("duration_minutes", 0) for task in session.get("tasks", [])
         )
 
         if total_minutes > max_minutes:
@@ -357,6 +339,8 @@ def generate_study_plan(
             )
 
     return plan
+
+
 def complete_session(plan: dict, session_number: int) -> dict:
     """
     Mark a study session as completed.
@@ -372,9 +356,9 @@ def complete_session(plan: dict, session_number: int) -> dict:
             session["status"] = "completed"
             return plan
 
-    raise ValueError(
-        f"Study session {session_number} does not exist."
-    )
+    raise ValueError(f"Study session {session_number} does not exist.")
+
+
 def start_session(plan: dict, session_number: int) -> dict:
     """
     Mark a study session as in progress.
@@ -392,9 +376,7 @@ def start_session(plan: dict, session_number: int) -> dict:
             session["status"] = "in_progress"
             return plan
 
-    raise ValueError(
-        f"Study session {session_number} does not exist."
-    )
+    raise ValueError(f"Study session {session_number} does not exist.")
 
 
 def get_next_pending_session(plan: dict):
@@ -409,6 +391,8 @@ def get_next_pending_session(plan: dict):
             return session
 
     return None
+
+
 def get_study_plan_progress(plan: dict) -> dict:
     """
     Return the current progress of a flexible study plan.
@@ -419,9 +403,7 @@ def get_study_plan_progress(plan: dict) -> dict:
     total_sessions = len(sessions)
 
     completed_sessions = sum(
-        1
-        for session in sessions
-        if session.get("status", "pending") == "completed"
+        1 for session in sessions if session.get("status", "pending") == "completed"
     )
 
     in_progress_sessions = [
@@ -437,13 +419,7 @@ def get_study_plan_progress(plan: dict) -> dict:
         "completed_sessions": completed_sessions,
         "remaining_sessions": total_sessions - completed_sessions,
         "in_progress_session": (
-            in_progress_sessions[0]
-            if in_progress_sessions
-            else None
+            in_progress_sessions[0] if in_progress_sessions else None
         ),
-        "next_pending_session": (
-            next_pending["session"]
-            if next_pending
-            else None
-        )
+        "next_pending_session": (next_pending["session"] if next_pending else None),
     }

@@ -55,8 +55,8 @@ class MindmapRequest(BaseModel):
 
 @app.post("/api/upload")
 async def upload_document(file: UploadFile = File(...)):
-    # Streamlit UploadedFile has slightly different API than FastAPI UploadFile
-    # We will mock it to make backend.py happy
+    # The backend expects a file object with .name and .getvalue() methods,
+    # so we wrap the FastAPI UploadFile in a simple adapter.
     class MockUploadedFile:
         def __init__(self, name, content):
             self.name = name

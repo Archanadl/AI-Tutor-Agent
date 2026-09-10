@@ -5,7 +5,10 @@ from __future__ import annotations
 from datetime import datetime, date
 from typing import Any, Dict, List, Optional
 
-import streamlit as st
+
+# In-memory progress store (replaces Streamlit session_state).
+# Each key mirrors the old st.session_state key.
+_progress_state: Dict[str, Any] = {}
 
 
 # ============================================================
@@ -13,13 +16,18 @@ import streamlit as st
 # ============================================================
 
 def _ensure_progress_state() -> None:
-    """Ensure progress-related session state exists."""
+    """Ensure progress-related state exists."""
 
-    if "progress_quiz_attempts" not in st.session_state:
-        st.session_state.progress_quiz_attempts = []
+    if "progress_quiz_attempts" not in _progress_state:
+        _progress_state["progress_quiz_attempts"] = []
 
-    if "progress_study_sessions" not in st.session_state:
-        st.session_state.progress_study_sessions = []
+    if "progress_study_sessions" not in _progress_state:
+        _progress_state["progress_study_sessions"] = []
+
+
+def clear_progress_state() -> None:
+    """Reset all progress data. Useful for tests."""
+    _progress_state.clear()
 
 
 # ============================================================
@@ -57,7 +65,7 @@ def record_quiz_attempt(
     "questions": questions or [],
 }
 
-    st.session_state.progress_quiz_attempts.append(attempt)
+    _progress_state["progress_quiz_attempts"].append(attempt)
 
     return attempt
 
@@ -85,7 +93,7 @@ def record_study_session(
         "timestamp": datetime.now().isoformat(),
     }
 
-    st.session_state.progress_study_sessions.append(
+    _progress_state["progress_study_sessions"].append(
         activity
     )
 
@@ -101,8 +109,8 @@ def get_progress_summary() -> Dict[str, Any]:
 
     _ensure_progress_state()
 
-    quizzes = st.session_state.progress_quiz_attempts
-    sessions = st.session_state.progress_study_sessions
+    quizzes = _progress_state["progress_quiz_attempts"]
+    sessions = _progress_state["progress_study_sessions"]
 
     total_quizzes = len(quizzes)
 
@@ -155,7 +163,7 @@ def get_topic_mastery() -> Dict[str, Dict[str, Any]]:
 
     _ensure_progress_state()
 
-    quizzes = st.session_state.progress_quiz_attempts
+    quizzes = _progress_state["progress_quiz_attempts"]
 
     topic_data: Dict[str, List[float]] = {}
 
@@ -256,7 +264,7 @@ def get_study_streak() -> int:
 
     activity_dates = set()
 
-    for quiz in st.session_state.progress_quiz_attempts:
+    for quiz in _progress_state["progress_quiz_attempts"]:
 
         timestamp = quiz.get("timestamp")
 
@@ -265,7 +273,7 @@ def get_study_streak() -> int:
                 datetime.fromisoformat(timestamp).date()
             )
 
-    for session in st.session_state.progress_study_sessions:
+    for session in _progress_state["progress_study_sessions"]:
 
         timestamp = session.get("timestamp")
 

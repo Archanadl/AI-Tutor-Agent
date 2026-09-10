@@ -1,6 +1,5 @@
-import streamlit as st
-from app.progress.tracker import get_study_streak
 from app.progress.tracker import (
+    clear_progress_state,
     record_quiz_attempt,
     record_study_session,
     get_progress_summary,
@@ -11,13 +10,9 @@ from app.progress.tracker import (
 )
 
 
-def clear_state():
-    st.session_state.clear()
-
-
 def test_quiz_attempt_is_recorded():
 
-    clear_state()
+    clear_progress_state()
 
     record_quiz_attempt(
         topic="Computer Networks",
@@ -34,7 +29,7 @@ def test_quiz_attempt_is_recorded():
 
 def test_topic_mastery():
 
-    clear_state()
+    clear_progress_state()
 
     record_quiz_attempt(
         topic="Computer Networks",
@@ -52,7 +47,7 @@ def test_topic_mastery():
 
 def test_weak_topic():
 
-    clear_state()
+    clear_progress_state()
 
     record_quiz_attempt(
         topic="DBMS",
@@ -70,7 +65,7 @@ def test_weak_topic():
 
 def test_recommendation():
 
-    clear_state()
+    clear_progress_state()
 
     record_quiz_attempt(
         topic="Operating Systems",
@@ -88,7 +83,7 @@ def test_recommendation():
 
 def test_study_session():
 
-    clear_state()
+    clear_progress_state()
 
     record_study_session(
         session_number=1,
@@ -104,7 +99,7 @@ def test_study_session():
 
 def test_study_streak():
 
-    clear_state()
+    clear_progress_state()
 
     record_study_session(
         session_number=1,

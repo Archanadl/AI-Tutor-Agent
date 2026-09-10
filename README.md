@@ -2,53 +2,38 @@
 
 ## Overview
 
-AI Tutor Agent is an intelligent educational assistant developed using Retrieval-Augmented Generation (RAG), LangGraph, and Multi-Component Processing (MCP). The system allows users to upload educational PDF documents, ask questions in natural language, and receive accurate, context-aware responses.
+AI Tutor Agent is an intelligent educational assistant built with Retrieval-Augmented Generation (RAG), LangGraph, and a modern full-stack architecture. Users can upload educational PDF documents, ask questions in natural language, generate flashcards, take quizzes, visualize mind maps, and create personalized study plans — all powered by Google Gemini and Groq LLMs.
 
-When the required information is unavailable in the uploaded documents, the agent automatically performs a web search and generates an informed response while maintaining conversational context throughout the session.
-
----
-
-## Problem Statement
-
-Students often spend significant time searching through textbooks, notes, and online resources to find relevant information. This project addresses that challenge by providing an AI-powered tutor capable of answering questions directly from uploaded study materials with an intelligent web search fallback.
-
----
-
-## Objectives
-
-- Build an AI-powered educational assistant.
-- Enable question answering from uploaded PDF documents.
-- Implement Retrieval-Augmented Generation (RAG).
-- Use LangGraph for workflow orchestration.
-- Integrate web search when local documents do not contain relevant information.
-- Maintain conversational memory for follow-up questions.
+When the required information is unavailable in the uploaded documents, the agent automatically performs a web search (via DuckDuckGo through an MCP server) and generates an informed response while maintaining conversational context throughout the session.
 
 ---
 
 ## Features
 
-- Upload and process PDF documents
-- Intelligent document parsing and chunking
-- Semantic search using ChromaDB
-- Retrieval-Augmented Generation (RAG)
-- Document relevance grading
-- Automatic DuckDuckGo web search fallback
-- Conversational memory
-- Interactive Streamlit chat interface
+- 📄 **PDF Upload & RAG** — Upload study materials; the agent chunks, embeds, and retrieves relevant content semantically
+- 💬 **AI Chat Tutor** — Ask questions grounded in your uploaded documents, with automatic web search fallback
+- 🧠 **Mind Maps** — Generate interactive, branched mind maps visualized with Mermaid.js (zoom, pan, fullscreen, SVG download)
+- 🃏 **Flashcards** — AI-generated flashcards with spaced-repetition scheduling (SM-2 algorithm)
+- 📝 **Quizzes** — Topic-based quizzes with configurable difficulty and question count
+- 📅 **Study Plans** — Personalized multi-session study plans with progress tracking
+- 🌐 **Web Search Fallback** — Automatic DuckDuckGo search when documents lack relevant context
+- 🎨 **Theming** — Multiple UI themes (Midnight Aurora, Forest Deep, Solar Flare, Light Frost)
 
 ---
 
 ## Technology Stack
 
-| Component | Technology |
-|-----------|------------|
-| Language | Python |
-| Framework | LangChain, LangGraph |
+| Layer | Technology |
+|-------|------------|
+| Language | Python 3.13, TypeScript |
+| AI / LLM | Google Gemini, Groq |
+| Agent Framework | LangChain, LangGraph |
 | Vector Database | ChromaDB |
-| Large Language Model | Google Gemini / Groq |
-| Web Search | DuckDuckGo |
+| Web Search | DuckDuckGo (via MCP server) |
 | MCP Framework | FastMCP |
-| Frontend | Streamlit |
+| Backend API | FastAPI + Uvicorn |
+| Frontend | React 19, Vite, TypeScript |
+| Diagramming | Mermaid.js |
 | PDF Processing | PyPDF |
 | Version Control | Git & GitHub |
 
@@ -60,127 +45,170 @@ Students often spend significant time searching through textbooks, notes, and on
 AI-Tutor-Agent/
 │
 ├── app/
-│   ├── graph/
-│   ├── nodes/
-│   ├── rag/
-│   ├── prompts/
-│   ├── tools/
-│   ├── memory/
+│   ├── api/
+│   │   └── main.py            # FastAPI backend (REST API)
+│   ├── graph.py               # LangGraph workflow definition
+│   ├── prompts/               # LLM prompt templates
+│   │   ├── mindmap_prompt.py
+│   │   ├── flashcard_prompt.py
+│   │   ├── quiz_prompt.py
+│   │   ├── grader_prompt.py
+│   │   ├── generator_prompt.py
+│   │   └── prompt_manager.py
+│   ├── rag/                   # RAG pipeline (chunking, embeddings, retrieval)
+│   ├── study_plan/            # Study plan generation logic
+│   ├── progress/              # Session progress tracking
 │   ├── ui/
-│   └── utils/
+│   │   └── backend.py         # Core business logic (shared with FastAPI)
+│   └── metrics.py
 │
-├── data/
-│   ├── pdfs/
-│   └── chroma_db/
+├── frontend/                  # React + Vite frontend
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── chat/          # AI chat interface
+│   │   │   ├── mindmap/       # Mind map viewer
+│   │   │   ├── flashcards/    # Flashcard UI
+│   │   │   └── studyplan/     # Study plan UI
+│   │   ├── App.tsx
+│   │   └── index.css          # Theme system & design tokens
+│   └── vite.config.ts
 │
-├── docs/
-├── tests/
-├── assets/
+├── mcp_server/
+│   ├── server.py              # MCP server entry point
+│   └── web_search_node.py     # DuckDuckGo web search tool
 │
+├── chroma_db/                 # Persistent vector store
 ├── requirements.txt
-├── README.md
 ├── .env.example
 └── main.py
 ```
 
 ---
 
-## Installation
+## Installation & Setup
 
-Clone the repository
+### 1. Clone the Repository
 
 ```bash
 git clone https://github.com/<your-username>/AI-Tutor-Agent.git
 cd AI-Tutor-Agent
 ```
 
-Create a virtual environment
+### 2. Create and Activate a Virtual Environment
 
 ```bash
-python -m venv venv
+python -m venv .venv
+
+# macOS / Linux
+source .venv/bin/activate
+
+# Windows
+.venv\Scripts\activate
 ```
 
-Activate the virtual environment
-
-**Windows**
-
-```bash
-venv\Scripts\activate
-```
-
-**macOS/Linux**
-
-```bash
-source venv/bin/activate
-```
-
-Install dependencies
+### 3. Install Python Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-Create a `.env` file and add your API key.
+### 4. Configure Environment Variables
+
+Copy the example file and fill in your API keys:
+
+```bash
+cp .env.example .env
+```
 
 ```env
-GOOGLE_API_KEY=your_google_api_key
+GOOGLE_API_KEY=your_google_gemini_api_key
 GROQ_API_KEY=your_groq_api_key
 ```
 
-Run the MCP Server (Web Search Tool)
+> Get your Gemini API key from [Google AI Studio](https://aistudio.google.com/) and your Groq key from [console.groq.com](https://console.groq.com/).
 
-Open a new terminal, activate the environment, and run:
+### 5. Install Frontend Dependencies
 
 ```bash
+cd frontend
+npm install
+cd ..
+```
+
+---
+
+## Running the Application
+
+The app requires **three processes** running concurrently. Open three separate terminal tabs/windows, activate the virtual environment in each, and run:
+
+### Terminal 1 — MCP Web Search Server
+
+```bash
+source .venv/bin/activate
 python -m mcp_server.server
 ```
 
-Run the application (Frontend)
-
-Open another terminal, activate the environment, and run:
+### Terminal 2 — FastAPI Backend
 
 ```bash
-streamlit run app/ui/app.py
+source .venv/bin/activate
+uvicorn app.api.main:app --reload --port 8000
 ```
+
+> API available at `http://localhost:8000`  
+> Interactive API docs at `http://localhost:8000/docs`
+
+### Terminal 3 — React Frontend
+
+```bash
+cd frontend
+npm run dev
+```
+
+> Web UI available at **`http://localhost:5173`**
+
+The Vite dev server proxies all `/api` requests to the FastAPI backend automatically.
+
+---
+
+## API Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/upload` | Upload a PDF document |
+| `POST` | `/api/chat` | Send a question to the AI tutor |
+| `POST` | `/api/flashcards` | Generate flashcards for a topic |
+| `POST` | `/api/flashcards/submit` | Submit a flashcard answer (SM-2 scheduling) |
+| `POST` | `/api/quiz` | Generate a quiz |
+| `POST` | `/api/study-plan` | Create a personalized study plan |
+| `POST` | `/api/study-plan/session/start` | Begin a study session |
+| `POST` | `/api/study-plan/session/complete` | Complete a study session |
+| `POST` | `/api/study-plan/progress` | Get study plan progress |
+| `POST` | `/api/mindmap` | Generate a mind map (returns Mermaid code) |
 
 ---
 
 ## Workflow
 
-1. User uploads one or more PDF documents.
-2. Documents are parsed and divided into semantic chunks.
-3. Chunks are embedded and stored in ChromaDB.
-4. User asks a question.
-5. The system retrieves the most relevant document chunks.
-6. A grading node checks whether the retrieved context is sufficient.
-7. If relevant, the LLM generates an answer.
-8. Otherwise, the system performs a DuckDuckGo web search using MCP.
-9. The final response is generated and returned.
-10. Chat history is stored for contextual follow-up questions.
-
----
-
-## Team Responsibilities
-
-| Member | Responsibility |
-|---------|----------------|
-| Member 1 | LangGraph architecture and workflow integration |
-| Member 2 | PDF parsing, embeddings, and ChromaDB |
-| Member 3 | Prompt engineering and evaluation |
-| Member 4 | MCP server and web search integration |
-| Member 5 | Streamlit frontend development |
+1. User uploads a PDF document via the frontend.
+2. The document is parsed, chunked, embedded, and stored in ChromaDB.
+3. User asks a question in the Chat view.
+4. The LangGraph agent retrieves the most relevant chunks from ChromaDB.
+5. A grading node checks whether retrieved context is sufficient.
+6. If relevant, the LLM generates a grounded answer.
+7. If not, the MCP server performs a DuckDuckGo web search and the LLM synthesizes the result.
+8. The response is returned with conversational memory maintained.
 
 ---
 
 ## Future Enhancements
 
-- Support multiple document collections
 - Voice-based interaction
-- OCR for scanned PDFs
-- Citation-based answers
-- User authentication
-- Cloud deployment
-- Mobile application support
+- OCR support for scanned PDFs
+- Citation-based answers with source highlighting
+- User authentication & multi-user support
+- Cloud deployment (GCP / AWS)
+- Mobile application
 
 ---
 

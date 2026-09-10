@@ -10,14 +10,14 @@ When the required information is unavailable in the uploaded documents, the agen
 
 ## Features
 
-- 📄 **PDF Upload & RAG** — Upload study materials; the agent chunks, embeds, and retrieves relevant content semantically
-- 💬 **AI Chat Tutor** — Ask questions grounded in your uploaded documents, with automatic web search fallback
-- 🧠 **Mind Maps** — Generate interactive, branched mind maps visualized with Mermaid.js (zoom, pan, fullscreen, SVG download)
-- 🃏 **Flashcards** — AI-generated flashcards with spaced-repetition scheduling (SM-2 algorithm)
-- 📝 **Quizzes** — Topic-based quizzes with configurable difficulty and question count
-- 📅 **Study Plans** — Personalized multi-session study plans with progress tracking
-- 🌐 **Web Search Fallback** — Automatic DuckDuckGo search when documents lack relevant context
-- 🎨 **Theming** — Multiple UI themes (Midnight Aurora, Forest Deep, Solar Flare, Light Frost)
+- **PDF Upload & RAG** — Upload study materials; the agent chunks, embeds, and retrieves relevant content semantically
+- **AI Chat Tutor** — Ask questions grounded in your uploaded documents, with automatic web search fallback
+- **Mind Maps** — Generate interactive, branched mind maps visualized with Mermaid.js (zoom, pan, fullscreen, SVG download)
+- **Flashcards** — AI-generated flashcards with spaced-repetition scheduling (SM-2 algorithm)
+- **Quizzes** — Topic-based quizzes with configurable difficulty and question count
+- **Study Plans** — Personalized multi-session study plans with progress tracking
+- **Web Search Fallback** — Automatic DuckDuckGo search when documents lack relevant context
+- **Theming** — Multiple UI themes (Midnight Aurora, Forest Deep, Solar Flare, Light Frost)
 
 ---
 

@@ -918,6 +918,8 @@ const StudyPlanComponent = () => {
           className="btn btn-primary"
           style={{
             marginTop: "1rem",
+            fontSize: "1.15rem",
+            padding: "0.85rem 1.5rem",
           }}
           disabled={isLoading}
         >
